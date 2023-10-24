@@ -25,6 +25,7 @@ normLikelihoodF <- function(data, param){
   return(-ll)
 }
 
+
 MLE <- optim(par=c(mean = 168,sd = 7), normLikelihoodF, d = data)
 MLE$par
 
@@ -134,4 +135,37 @@ parametry_odh
 
 #__________
 # Ukol 2.1
+
+library(ggplot2)
+
+dataPom <- read.csv("ARAD-uvery.csv", sep = ";")
+dataPom[,5] <- gsub(',', '.', dataPom[,5])
+
+dataARAD <- as.data.frame(matrix(ncol = 0, nrow = nrow(dataPom)))
+
+dataARAD$obdobi <- as.Date(dataPom[,1], "%Y-%m-%d")
+dataARAD$uvery <- as.numeric(dataPom[,5])
+dataARAD$uveryTis <- dataARAD$uvery/1000
+
+dataARAD <- dataARAD[order(dataARAD[,1]),]
+
+ggplot(dataARAD, aes(x = obdobi, y = uveryTis)) +
+  geom_line() +
+  xlab("Období") + ylab("Objem úvěrů v tis. ks") + ggtitle("Úvěry poskytnuté nefinančním podnikům")
+
+#odstraneni trendu
+dataARAD$t <- seq(1:nrow(dataARAD))
+lm <- lm(uveryTis ~ t, dataARAD)
+dataARAD$uveryTis_bezTrendu <- lm$residuals + lm$coefficients[1]
+
+ggplot(dataARAD, aes(x = obdobi, y = uveryTis_bezTrendu)) +
+  geom_line() +
+  xlab("Období") + ylab("Objem úvěrů v tis. ks") + ggtitle("Úvěry poskytnuté nefinančním podnikům očištěné o lineární trend")
+
+
+
+
+
+
+
 
