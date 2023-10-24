@@ -1,0 +1,95 @@
+```{r}
+library(shiny)
+library(plotrix) 
+library(plyr)
+library(ggplot2)
+library(reshape2) 
+
+#-------------------------------------------------------------------------------
+#Bernoulliho pokus
+#-------------------------------------------------------------------------------
+
+bernoulliFunkce <- function(p = 0.5, n){
+  p <- p
+  
+  data_bernoulli = data.frame(matrix(nrow = n, ncol = 0)) 
+  data_bernoulli$Hodnota <- sample(0:1, n, replace = TRUE, prob = c(1-p, p))
+  data_bernoulli$Prumer <- data_bernoulli[1,1]
+  
+  for(i in 2:n){
+    data_bernoulli[i,2] <- mean(data_bernoulli[1:(i-1),1])
+  }
+  
+  return(data_bernoulli)
+}
+
+#-------------------------------------------------------------------------------
+
+ui <- fluidPage(mainPanel(width = 12,
+                  h3("Bernoulliho pokus"),
+                  sliderInput(
+                    inputId = "bernoulli_pokusy",
+                    label = "Počet pokusů:",
+                    min = 1,
+                    max = 5000,
+                    value = 2500,
+                    width = "100%"
+                  ),
+                  splitLayout(
+                    sliderInput(
+                      inputId = "bernoulli_p",
+                      label = "Pravděpodobnost p (úspěchu):",
+                      min = 0,
+                      max = 1,
+                      value = 0.5,
+                      width = "100%"
+                    ),
+                    sliderInput(
+                      inputId = "bernoulli_opakovani",
+                      label = "Počet opakování:",
+                      min = 1,
+                      max = 5,
+                      value = 3,
+                      width = "100%"
+                    )
+                  ),br(), br(),
+                  mainPanel(plotOutput(outputId = "bernoulliGraf"), width="100%")
+                ))
+
+#-------------------------------------------------------------------------------
+
+server <- function(input, output) {
+  
+  output$bernoulliGraf <- renderPlot({
+    data <- data.frame(matrix(nrow = input$bernoulli_pokusy, ncol = input$bernoulli_opakovani))
+    
+    for(i in 1:input$bernoulli_opakovani){
+      x <- bernoulliFunkce(input$bernoulli_p, input$bernoulli_pokusy)
+      data[i] <- x[2] 
+    }
+    
+    data$index <- 1:input$bernoulli_pokusy
+    data_long <- melt(data, id = "index")
+    
+    x_pozice <- 0.25
+    
+    if(input$bernoulli_p < 0.4){
+      x_pozice <- 0.75
+    }
+    
+    ggplot(data_long, aes(x = data_long$index, y = data_long$value, color = variable)) + 
+      geom_line(size = 1)+
+      xlab("Počet pokusů") + ylab("Podíl úspěchů") + ylim(0,1)+
+      geom_hline(yintercept=input$bernoulli_p,linetype = "dashed")+
+      scale_colour_discrete(labels= paste(1:length(unique(data_long$variable) ), ". řada pokusů"))+
+      theme(legend.position = c(0.5, x_pozice),axis.text = element_text(size = 15), axis.title = element_text(size = 15), legend.text = element_text(size=15))+
+      labs(color=NULL)
+  })
+}
+
+#-------------------------------------------------------------------------------
+
+shinyApp(ui = ui, server = server)
+
+```
+

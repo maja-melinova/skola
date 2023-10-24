@@ -1,0 +1,148 @@
+```{r}
+library(shiny)
+library(plotrix) 
+library(plyr)
+library(ggplot2)
+library(reshape2) 
+
+#-------------------------------------------------------------------------------
+#Ruleta - zjednodusena
+#-------------------------------------------------------------------------------
+
+ruletaFunkce <- function(n){
+  
+  data_ruleta = data.frame(matrix(nrow = n, ncol = 0)) 
+  data_ruleta$Cislo <- sample(0:36, n, replace = TRUE, prob=rep(1/37, times=37)) 
+  
+  #sude -> 2; liche -> 1; nula -> 0
+  data_ruleta$SudeLiche[data_ruleta$Cislo %% 2 == 1] <- 1
+  data_ruleta$SudeLiche[data_ruleta$Cislo %% 2 == 0] <- 2
+  data_ruleta$SudeLiche[data_ruleta$Cislo == 0] <- 0
+  
+  #cerna -> 1; cervena -> 2; zelena -> 0
+  
+  barva <- function(cislo){
+    vysledek <- c()
+    for(x in cislo){
+      if(x == 0){
+        vysledek <- c(vysledek, 0)
+      } else if(x == 2 || x == 4 || x == 6 || x == 8 || x == 10 || x == 11 || x == 13 || x == 15 || x == 17 || x == 20 || x == 22 || x == 24 || x == 26 || x == 28 || x == 29 || x == 31 || x == 33 || x == 35){
+        vysledek <- c(vysledek, 1)
+      } else {
+        vysledek <- c(vysledek, 2)
+      }
+    }
+    return(vysledek)
+  }
+  
+  data_ruleta$Barva <- barva(data_ruleta$Cislo)
+  
+  #nula -> 0; male -> 1; velke -> 2
+  data_ruleta$MaleVelke[data_ruleta$Cislo <= 18] <- 1
+  data_ruleta$MaleVelke[data_ruleta$Cislo > 18] <- 2
+  data_ruleta$MaleVelke[data_ruleta$Cislo == 0] <- 0
+  
+  #sazka - cislo -> 1, sude/liche -> 2, barva -> 3, mala/velka -> 4
+  data_ruleta$Sazka <- sample(1:4, n, replace = TRUE, prob = c(0.1, 0.3, 0.3, 0.3))
+  
+  sazka <- function(typ){
+    sazim <- c()
+    for(x in typ){
+      if(x == 1){
+        sazim <- c(sazim, sample(0:36, 1, replace = TRUE))
+      } else if(x == 2 || x == 3 || x == 4){
+        sazim <- c(sazim, sample(1:2, 1, replace = TRUE))
+      }
+    }
+    return(sazim)
+  }
+  
+  data_ruleta$Sazka2 <- sazka(data_ruleta$Sazka)
+  
+  #hrac -> 0; kasino -> 1
+  for(i in 1:n){
+    if(data_ruleta$Sazka[i] == 1 && data_ruleta$Sazka2[i] == data_ruleta$Cislo[i]){
+      data_ruleta$Vyhra[i] <- 0
+    } else if(data_ruleta$Sazka[i] == 2 && data_ruleta$Sazka2[i] == data_ruleta$SudeLiche[i]){
+      data_ruleta$Vyhra[i] <- 0
+    } else if(data_ruleta$Sazka[i] == 3 && data_ruleta$Sazka2[i] == data_ruleta$Barva[i]) {
+      data_ruleta$Vyhra[i] <- 0 
+    } else if(data_ruleta$Sazka[i] == 4 && data_ruleta$Sazka2[i] == data_ruleta$MaleVelke[i]) {
+      data_ruleta$Vyhra[i] <- 0 
+    } else {
+      data_ruleta$Vyhra[i] <- 1
+    }
+  }
+  
+  data_ruleta$Prumer <- data_ruleta[1,7]
+  
+  for(i in 1:n){
+    data_ruleta[i,8] <- mean(data_ruleta[1:i,7])
+  }
+  
+  return(data_ruleta)
+}
+
+#-------------------------------------------------------------------------------
+
+ui <- fluidPage(mainPanel(width = 12,
+                          h3("Ruleta"),
+                          splitLayout(
+                            mainPanel(width="100%",
+                                      sliderInput(
+                                        inputId = "ruleta_pokusy",
+                                        label = "Počet pokusů:",
+                                        min = 1,
+                                        max = 2000,
+                                        value = 1000,
+                                        width = "95%"
+                                      ),
+                                      sliderInput(
+                                        inputId = "ruleta_opakovani",
+                                        label = "Počet opakování:",
+                                        min = 1,
+                                        max = 5,
+                                        value = 3,
+                                        width = "95%"
+                                      )),
+                            mainPanel(tableOutput("ruletaTabulka"), width="100%", style="margin-left:20px")),
+                          br(), br(),
+                          mainPanel(plotOutput(outputId = "ruletaGraf"), width="100%")
+))
+
+#-------------------------------------------------------------------------------
+
+server <- function(input, output) {
+  
+  output$ruletaGraf <- renderPlot({
+    data <- data.frame(matrix(nrow = input$ruleta_pokusy, ncol = input$ruleta_opakovani))
+    
+    for(i in 1:input$ruleta_opakovani){
+      x <- ruletaFunkce(input$ruleta_pokusy)
+      data[i] <- x[8] 
+    }
+    
+    data$index <- 1:input$ruleta_pokusy
+    data_long <- melt(data, id = "index")
+    
+    ggplot(data_long, aes(x = data_long$index, y = data_long$value, color = variable)) + 
+      geom_line(size = 1)+
+      xlab("Počet pokusů") + ylab("Podíl úspěchů") + ylim(0,1)+
+      geom_hline(yintercept=0.5,linetype = "dashed")+
+      scale_colour_discrete(labels= paste(1:length(unique(data_long$variable) ), ". řada pokusů"))+
+      theme(legend.position = c(0.5, 0.25),axis.text = element_text(size = 15), axis.title = element_text(size = 15), legend.text = element_text(size=15))+
+      labs(color=NULL) +
+      annotate(geom="text", x = input$ruleta_pokusy*(5/6), y = 0.6, label="Vyhrává kasino", shiny = 5) +
+      annotate(geom="text", x = input$ruleta_pokusy*(5/6), y = 0.4, label="Vyhrává hráč", shiny = 5)
+  })
+  output$ruletaTabulka = renderTable({
+    data_ukazka <- ruletaFunkce(5)[,1:7]
+  })
+}
+
+#-------------------------------------------------------------------------------
+
+shinyApp(ui = ui, server = server)
+
+```
+

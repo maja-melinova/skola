@@ -1,0 +1,146 @@
+```{r}
+library(shiny)
+library(plotrix) 
+library(plyr)
+library(ggplot2)
+library(reshape2) 
+
+#-------------------------------------------------------------------------------
+#Demo data - podíl chlapců a děvčat při narození
+#-------------------------------------------------------------------------------
+
+demo_funkce <- function(type){
+  # narozeni celkem --------------------------------------------------------------
+  data_narozeni_celkem <- read.csv("narozeni_celkem.csv", sep = ";")
+  rownames(data_narozeni_celkem) <- data_narozeni_celkem[,1]
+  data_narozeni_celkem <- data_narozeni_celkem[,2:16]
+  
+  nazvySloupcu_c <- c()
+  for(i in 7:21){
+    ifelse(i < 10, nazvySloupcu_c[i-6] <- sprintf("c0%d",i), nazvySloupcu_c[i-6] <- sprintf("c%d",i))
+  }
+  
+  colnames(data_narozeni_celkem) <- nazvySloupcu_c
+  
+  pocetNA_c <- setNames(rowSums(is.na(data_narozeni_celkem)), rownames(data_narozeni_celkem))
+  pocetNA_c <- pocetNA_c[pocetNA_c > 7]
+  
+  
+  # narozeni muzi ----------------------------------------------------------------
+  data_narozeni_muzi <- read.csv("narozeni_muzi.csv", sep = ";")
+  rownames(data_narozeni_muzi) <- data_narozeni_muzi[,1]
+  data_narozeni_muzi <- data_narozeni_muzi[,2:16]
+  
+  nazvySloupcu_m <- c()
+  for(i in 7:21){
+    ifelse(i < 10, nazvySloupcu_m[i-6] <- sprintf("m0%d",i), nazvySloupcu_m[i-6] <- sprintf("m%d",i))
+  }
+  
+  colnames(data_narozeni_muzi) <- nazvySloupcu_m
+  
+  pocetNA_m <- setNames(rowSums(is.na(data_narozeni_muzi)), rownames(data_narozeni_muzi))
+  pocetNA_m <- pocetNA_m[pocetNA_m > 7]
+  
+  #-------------
+  
+  radky_moc_NA <- intersect(names(pocetNA_c),names(pocetNA_m))
+  #radky_moc_NA -- řádky, kde je více než půl hodnot NA (a shodují se v tabulce "celkem" i "muzi")
+  
+  indexy_moc_NA <- c()
+  
+  for(i in 1:length(radky_moc_NA)){
+    indexy_moc_NA[i] <- which(radky_moc_NA[i] == rownames(data_narozeni_celkem))
+  }
+  
+  data_narozeni_celkem <- data_narozeni_celkem[-indexy_moc_NA,]
+  data_narozeni_muzi <- data_narozeni_muzi[-indexy_moc_NA,]
+  
+  #------------
+  # nahrazeni chybějících hodnot řádkovým medianem
+  median_c <- apply(data_narozeni_celkem, 1, median, na.rm=TRUE)
+  
+  for(i in 1:nrow(data_narozeni_celkem)){
+    for(j in 1:ncol(data_narozeni_celkem)){
+      if(is.na(data_narozeni_celkem[i, j])){
+        data_narozeni_celkem[i, j] <- median_c[i]
+      }
+    }
+  }
+  
+  median_m <- apply(data_narozeni_muzi, 1, median, na.rm=TRUE)
+  
+  for(i in 1:nrow(data_narozeni_muzi)){
+    for(j in 1:ncol(data_narozeni_muzi)){
+      if(is.na(data_narozeni_muzi[i, j])){
+        data_narozeni_muzi[i, j] <- median_m[i]
+      }
+    }
+  }
+  
+  data_podil_narozenych_m <- data.frame(matrix(nrow = nrow(data_narozeni_celkem), ncol = ncol(data_narozeni_celkem)))
+  rownames(data_podil_narozenych_m) <- rownames(data_narozeni_celkem)
+  
+  nazvySloupcu_p <- c()
+  for(i in 7:21){
+    ifelse(i < 10, nazvySloupcu_p[i-6] <- sprintf("p0%d",i), nazvySloupcu_p[i-6] <- sprintf("p%d",i))
+  }
+  
+  data_podil_narozenych_m <- data_narozeni_muzi/data_narozeni_celkem
+  colnames(data_podil_narozenych_m) <- nazvySloupcu_p
+  
+  if(type == "c"){
+    return(data_narozeni_celkem)
+  }
+  if(type == "m"){
+    return(data_narozeni_muzi)
+  }
+  if(type == "p"){
+    return(data_podil_narozenych_m)
+  }
+}
+
+#-------------------------------------------------------------------------------
+
+ui <- fluidPage(mainPanel(width = 12,
+                          h3("Podíl narozených chlapců"),
+                          mainPanel(dataTableOutput("demoTabulka"), width = "100%"), br(),
+                          mainPanel(plotOutput(outputId = "demoGraf"), width="100%")
+                ))
+
+server <- function(input, output) {
+  
+  output$demoTabulka <- renderDataTable({
+    demo_data <- round(demo_funkce("p"), digits = 4)
+  }, options = list(pageLength = 5, scrollX = TRUE))
+  
+  output$demoGraf <- renderPlot({
+    data_podil_narozenych_m <- demo_funkce("p")
+    data <- data.frame(matrix(nrow = ncol(data_podil_narozenych_m), ncol = 0))
+    
+    podil_narozenych_chlapcu <- c()
+    
+    for(i in 1:ncol(data_podil_narozenych_m)){
+      podil_narozenych_chlapcu[i] <- mean(as.matrix(data_podil_narozenych_m[,i]))
+    }
+    
+    podil_narozenach_devcat <- 1-podil_narozenych_chlapcu
+    pocet_chlapcu_na_100_devcat <- round(podil_narozenych_chlapcu/podil_narozenach_devcat*100, digits = 3)
+    
+    data$pocetChlapcu <- pocet_chlapcu_na_100_devcat
+    data$index <- c(2007:2021)
+    
+    ggplot(data, aes(x = index, y = pocetChlapcu, color = pocetChlapcu)) + 
+      geom_line(size = 1)+ 
+      xlab("Rok") + ylab("Počet chlapců na 100 děvčat")+
+      theme(legend.position = "none",axis.text = element_text(size = 15), axis.title = element_text(size = 15))+
+      labs(color=NULL)+
+      scale_x_continuous(breaks = scales::pretty_breaks(n = 15))
+  })
+}
+
+#-------------------------------------------------------------------------------
+
+shinyApp(ui = ui, server = server)
+
+```
+
