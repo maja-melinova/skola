@@ -162,8 +162,20 @@ ggplot(dataARAD, aes(x = obdobi, y = uveryTis_bezTrendu)) +
   geom_line() +
   xlab("Období") + ylab("Objem úvěrů v tis. ks") + ggtitle("Úvěry poskytnuté nefinančním podnikům očištěné o lineární trend")
 
-
-
+# Co stálo za růstem objemu úvěrů po roce 2005?
+# -> v nominálním vyjádření stouply v roce 2004 ve srovnání s rokem 1995 výdaje 
+#    na konečnou spotřebu domácností o 77 %, zatímco růst jejich hrubého 
+#    disponibilního důchodu byl nižší (+65 %)
+# -> změna v mentalitě Čechů pokud jde o náhled na zadluženost - ta přestala být
+#    strašákem budoucí finanční stability rodin
+# -> zvyšující se životní standard
+# https://www.czso.cz/csu/czso/cri/uvery-na-bydleni-se-blizi-ctvrt-bilionu-korun-2005-0bzoye0gkb
+#
+# Pokles objemu úvěrů po roce 2007 -> v USA vypukla hypoteční krize
+# -> ta postupně přerostla ve světovou finanční krizi
+# https://cs.wikipedia.org/wiki/Velká_recese
+#
+# +- od roku 2010 můžeme v datech vidět lineární rostoucí trend
 
 
 
