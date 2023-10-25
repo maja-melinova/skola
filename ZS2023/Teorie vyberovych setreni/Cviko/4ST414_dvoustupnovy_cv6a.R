@@ -11,20 +11,18 @@
 ##body: bodove ohodnoceni: 0-20 bodu
 
 ##nacteni souboru
-setwd("C:/Users/Vozar")
-getwd()
 testy<-read.csv("testy.csv")
 names(testy)
 summary(testy)
 ##nastaveni promennych
-M<-1600 ##rozsah ZS, pocet sekundarnich jednotek v ZS, pocet studentu
-N<-80 ## pocet primarnich jednotek (jednotl. cviceni v ZS)
-Mi<-20 ## pocet studentu na 1 cviceni v ZS
-PSU_jm=seq(1:N) ## nazev PSU
+M <- 1600 ##rozsah ZS, pocet sekundarnich jednotek v ZS, pocet studentu
+N <- 80 ## pocet primarnich jednotek (jednotl. cviceni v ZS)
+Mi <- 20 ## pocet studentu na 1 cviceni v ZS
+PSU_jm = seq(1:N) ## nazev PSU
 ##chceme vybrat celkem 1/10 studentu, opravime testy odhadneme prumerny pocet bodu z testu
 ##Vybereme 1/5, tj. 16 cviceni a v kazdem z nich opravime 1/2 testu, tj. mi=konst=10
-n<-ceiling(N/5)
-mi<-ceiling(Mi/2)
+n <- ceiling(N/5)
+mi <- ceiling(Mi/2)
 
 PSU_vyb=sample(PSU_jm,n,replace=F) ## nazev PSU
 
