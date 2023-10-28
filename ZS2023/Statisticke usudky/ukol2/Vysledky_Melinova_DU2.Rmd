@@ -199,7 +199,56 @@ p +
 
 ## Zákon velkých čísel
 
+#### Platí zákon velkých čísel
 
+```{r}
+n <- 200
+set.seed(42)
+
+gamma <-  as.data.frame(matrix(nrow = n, ncol = 0))
+gamma$x <-  1:n
+gamma$y1 <- rgamma(n, shape = tvar, scale = meritko)
+gamma$y2 <- rgamma(n, shape = tvar, scale = meritko)
+gamma$y3 <- rgamma(n, shape = tvar, scale = meritko)
+
+gamma$y1_Mean <- cumsum(gamma$y1) / seq_along(gamma$y1)
+gamma$y2_Mean <- cumsum(gamma$y2) / seq_along(gamma$y2)
+gamma$y3_Mean <- cumsum(gamma$y3) / seq_along(gamma$y3)
+
+ggplot(gamma) +
+  geom_hline(yintercept= tvar * meritko, color = "darkgrey") + 
+  geom_line(aes(x = x, y = y1_Mean), color = "#EC6B56") +
+  geom_line(aes(x = x, y = y2_Mean), color = "#FFC154") +
+  geom_line(aes(x = x, y = y3_Mean), color = "#47B39C") +
+  xlab("Počet pozorování") + ylab("Průměr hodnot")
+```
+
+#### Zákon velkých čísel neplatí
+
+```{r}
+n <- 200
+set.seed(10)
+
+student <-  as.data.frame(matrix(nrow = n, ncol = 0))
+student$x <-  1:n
+student$y1 <- rt(n,1)
+student$y2 <- rt(n,1)
+student$y3 <- rt(n,1)
+
+student$y1_Mean <- cumsum(student$y1) / seq_along(student$y1)
+student$y2_Mean <- cumsum(student$y2) / seq_along(student$y2)
+student$y3_Mean <- cumsum(student$y3) / seq_along(student$y3)
+
+ggplot(student) +
+  geom_line(aes(x = x, y = y1_Mean), color = "#EC6B56") +
+  geom_line(aes(x = x, y = y2_Mean), color = "#FFC154") +
+  geom_line(aes(x = x, y = y3_Mean), color = "#47B39C") +
+  xlab("Počet pozorování") + ylab("Průměr hodnot")
+```
+
+Zákon velkých čísel nemůže při tomto rozdělení fungovat díky tomu, že pro studentovo t rozdělení s jedním stupněm volnosti není definovaná střední hodnota - tím pádem k ní rozdělení nemůže konvergovat.
+
+<br /><br />
 
 
 
