@@ -1,0 +1,205 @@
+---
+title: "Ukol2 - Stochastická konvergence"
+author: "Marie Melínová"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Centrální limitní věta
+
+```{r}
+n <- c(n1 = 50, n2 = 100, n3 = 200)
+tvar <- 2
+meritko <- 3
+
+popis_rozdeleni <- round(c(stredni_hodnota = tvar*meritko, 
+                           rozptyl = tvar*meritko^2, 
+                           sikmost = 2/sqrt(tvar),
+                           spicatost = 6/tvar), 3)
+popis_rozdeleni
+```
+<br />
+
+#### Rozdělení úhrnu hodnot M
+
+$$ M \sim \Gamma(n \cdot tvar, meritko)$$
+```{r}
+rozdeleni_uhrnu <- as.data.frame(matrix(nrow = 3, ncol = 8))
+
+for(i in 1:3){
+  rozdeleni_uhrnu[i,] <- round(c(stredni_hodnota = (n[i]*tvar)*meritko, 
+                                 rozptyl = (n[i]*tvar)*meritko^2, 
+                                 sikmost = 2/sqrt(n[i]*tvar),
+                                 spicatost = 6/(n[i]*tvar),
+                                 median = NA,
+                                 modus = ((n[i]*tvar)-1)*meritko,
+                                 dolni_kvartil = qgamma(0.25, shape = n[i]*tvar),
+                                 horni_kvartil = qgamma(0.75, shape = n[i]*tvar)), 3)
+}
+
+rownames(rozdeleni_uhrnu) <- c("n = 50", "n = 100", "n = 200")
+colnames(rozdeleni_uhrnu) <- c("stredni_hodnota", "rozptyl", "sikmost", "spicatost", "median", "modus", "dolni_kvartil", "horni_kvartil")
+
+rozdeleni_uhrnu
+```
+
+$$P(M \le E(M)) = F(E(M))$$
+
+```{r}
+p1 <- c(n1 = pgamma(rozdeleni_uhrnu[1,1], shape = n[1]*tvar, scale = meritko),
+  n2 = pgamma(rozdeleni_uhrnu[2,1], shape = n[2]*tvar, scale = meritko),
+  n3 = pgamma(rozdeleni_uhrnu[3,1], shape = n[3]*tvar, scale = meritko))
+p1
+```
+
+$$P(M \le E(M)) = F(modus(M))$$
+```{r}
+p2 <- c(n1 = pgamma(rozdeleni_uhrnu[1,6], shape = n[1]*tvar, scale = meritko),
+  n2 = pgamma(rozdeleni_uhrnu[2,6], shape = n[2]*tvar, scale = meritko),
+  n3 = pgamma(rozdeleni_uhrnu[3,6], shape = n[3]*tvar, scale = meritko))
+p2
+```
+
+$$P(|M - E(M)| \le 0.3 \sqrt{D(M)}) = P(E(M) - 0.3 \sqrt{D(M)} ≤ M ≤ E(M) + 0.3 \sqrt{D(M)}) = \\ 
+= 1 - F(E(M) - 0.3 \sqrt{D(M)}) \cdot F(E(M) + 0.3 \sqrt{D(M)})$$
+
+```{r}
+p3 <- c(n1 = 1 - pgamma(rozdeleni_uhrnu[1,1] - 0.3*sqrt(rozdeleni_uhrnu[1,2]), shape = n[1]*tvar, scale = meritko) * pgamma(rozdeleni_uhrnu[1,1] + 0.3*sqrt(rozdeleni_uhrnu[1,2]), shape = n[1]*tvar, scale = meritko),
+  n2 = 1 - pgamma(rozdeleni_uhrnu[2,1] - 0.3*sqrt(rozdeleni_uhrnu[2,2]), shape = n[2]*tvar, scale = meritko) * pgamma(rozdeleni_uhrnu[2,1] + 0.3*sqrt(rozdeleni_uhrnu[2,2]), shape = n[2]*tvar, scale = meritko),
+  n3 = 1 - pgamma(rozdeleni_uhrnu[3,1] - 0.3*sqrt(rozdeleni_uhrnu[3,2]), shape = n[3]*tvar, scale = meritko) * pgamma(rozdeleni_uhrnu[3,1] + 0.3*sqrt(rozdeleni_uhrnu[3,2]), shape = n[3]*tvar, scale = meritko))
+p3
+```
+<br />
+
+#### Apriximace rozdělení úhrnu normálním rozdělením
+
+$$ M \sim N((n \cdot tvar) \cdot meritko, (n \cdot tvar) \cdot meritko ^ 2) $$
+```{r}
+rozdeleni_uhrnu_N <- as.data.frame(matrix(nrow = 3, ncol = 8))
+
+for(i in 1:3){
+  rozdeleni_uhrnu_N[i,] <- round(c(stredni_hodnota = (n[i]*tvar)*meritko, 
+                                   rozptyl = (n[i]*tvar)*meritko^2, 
+                                   sikmost = 0,
+                                   spicatost = 0,
+                                   median = (n[i]*tvar)*meritko,
+                                   modus = (n[i]*tvar)*meritko,
+                                   dolni_kvartil = qnorm(0.25, mean = (n[i]*tvar), sd = sqrt((n[i]*tvar)*meritko^2)),
+                                   horni_kvartil = qnorm(0.75, mean = (n[i]*tvar), sd = sqrt((n[i]*tvar)*meritko^2))), 3)
+}
+
+rownames(rozdeleni_uhrnu_N) <- c("n = 50", "n = 100", "n = 200")
+colnames(rozdeleni_uhrnu_N) <- c("stredni_hodnota", "rozptyl", "sikmost", "spicatost", "median", "modus", "dolni_kvartil", "horni_kvartil")
+
+rozdeleni_uhrnu_N
+
+```
+
+
+$$P(M \le E(M)) = F(E(M))$$
+
+```{r}
+p1_N <- c(n1 = pnorm(rozdeleni_uhrnu_N[1,1], mean = rozdeleni_uhrnu_N[1,1], sd = sqrt(rozdeleni_uhrnu_N[1,2])),
+  n2 = pnorm(rozdeleni_uhrnu_N[2,1], mean = rozdeleni_uhrnu_N[2,1], sd = sqrt(rozdeleni_uhrnu_N[2,2])),
+  n3 = pnorm(rozdeleni_uhrnu_N[3,1], mean = rozdeleni_uhrnu_N[3,1], sd = sqrt(rozdeleni_uhrnu_N[3,2])))
+p1_N
+```
+
+$$P(M \le E(M)) = F(modus(M))$$
+```{r}
+p2_N <- c(n1 = pnorm(rozdeleni_uhrnu_N[1,6], mean = rozdeleni_uhrnu_N[1,1], sd = sqrt(rozdeleni_uhrnu_N[1,2])),
+  n2 = pnorm(rozdeleni_uhrnu_N[2,6], mean = rozdeleni_uhrnu_N[2,1], sd = sqrt(rozdeleni_uhrnu_N[2,2])),
+  n3 = pnorm(rozdeleni_uhrnu_N[3,6], mean = rozdeleni_uhrnu_N[3,1], sd = sqrt(rozdeleni_uhrnu_N[3,2])))
+p2_N
+```
+
+$$P(|M - E(M)| \le 0.3 \sqrt{D(M)}) = P(E(M) - 0.3 \sqrt{D(M)} ≤ M ≤ E(M) + 0.3 \sqrt{D(M)}) = \\ 
+= 1 - F(E(M) - 0.3 \sqrt{D(M)}) \cdot F(E(M) + 0.3 \sqrt{D(M)})$$
+
+```{r}
+p3_N <- c(n1 = 1 - pnorm(rozdeleni_uhrnu_N[1,1] - 0.3*sqrt(rozdeleni_uhrnu_N[1,2]), 
+                mean = rozdeleni_uhrnu_N[1,1],
+                sd = sqrt(rozdeleni_uhrnu_N[1,2])) *
+          pnorm(rozdeleni_uhrnu_N[1,1] + 0.3*sqrt(rozdeleni_uhrnu_N[1,2]), 
+                mean = rozdeleni_uhrnu_N[1,1],
+                sd = sqrt(rozdeleni_uhrnu_N[1,2])),
+  n2 = 1 - pnorm(rozdeleni_uhrnu_N[2,1] - 0.3*sqrt(rozdeleni_uhrnu_N[2,2]), 
+                mean = rozdeleni_uhrnu_N[2,1],
+                sd = sqrt(rozdeleni_uhrnu_N[2,2])) *
+          pnorm(rozdeleni_uhrnu_N[2,1] + 0.3*sqrt(rozdeleni_uhrnu_N[2,2]), 
+                mean = rozdeleni_uhrnu_N[2,1],
+                sd = sqrt(rozdeleni_uhrnu_N[2,2])),
+  n3 = 1 - pnorm(rozdeleni_uhrnu_N[3,1] - 0.3*sqrt(rozdeleni_uhrnu_N[3,2]), 
+                mean = rozdeleni_uhrnu_N[3,1],
+                sd = sqrt(rozdeleni_uhrnu_N[3,2])) *
+          pnorm(rozdeleni_uhrnu_N[3,1] + 0.3*sqrt(rozdeleni_uhrnu_N[3,2]), 
+                mean = rozdeleni_uhrnu_N[3,1],
+                sd = sqrt(rozdeleni_uhrnu_N[3,2])))
+p3_N
+```
+<br />
+
+#### Porovnání exaktního rozdělení a aproximovaného rozdělení
+
+```{r}
+cbind(cbind(p1, p1_N), cbind(p2, p2_N), cbind(p3, p3_N))
+```
+
+Z výsledků porovnání rozdělení můžeme vidět, jak se zvyšujícím n pravděpodobnost exaktního gamma rozdělení konverguje k pravděpodobnosti aproximovaného normálního rozdělení.
+
+#### Grafické znázornění
+
+```{r}
+library(ggplot2)
+
+x1 <- rgamma(1000, shape = n[1]*tvar, scale = meritko)
+x1_N <- rnorm(1000, mean = rozdeleni_uhrnu_N[1,1], sd = sqrt(rozdeleni_uhrnu_N[1,2]))
+
+x2 <- rgamma(1000, shape = n[2]*tvar, scale = meritko)
+x2_N <- rnorm(1000, mean = rozdeleni_uhrnu_N[2,1], sd = sqrt(rozdeleni_uhrnu_N[2,2]))
+
+x3 <- rgamma(1000, shape = n[3]*tvar, scale = meritko)
+x3_N <- rnorm(1000, mean = rozdeleni_uhrnu_N[3,1], sd = sqrt(rozdeleni_uhrnu_N[3,2]))
+
+data <- as.data.frame(matrix(nrow = 1000, ncol = 0)) 
+data$x1 <- sort(x1)
+data$y1 <- dgamma(data$x1 , shape = n[1]*tvar, scale = meritko)
+data$x1_N <- sort(x1_N)
+data$y1_N <- dnorm(data$x1_N, mean = rozdeleni_uhrnu_N[1,1], sd = sqrt(rozdeleni_uhrnu_N[1,2]))
+
+data$x2 <- sort(x2)
+data$y2 <- dgamma(data$x2 , shape = n[2]*tvar, scale = meritko)
+data$x2_N <- sort(x2_N)
+data$y2_N <- dnorm(data$x2_N, mean = rozdeleni_uhrnu_N[2,1], sd = sqrt(rozdeleni_uhrnu_N[2,2]))
+
+data$x3 <- sort(x3)
+data$y3 <- dgamma(data$x3 , shape = n[3]*tvar, scale = meritko)
+data$x3_N <- sort(x3_N)
+data$y3_N <- dnorm(data$x3_N, mean = rozdeleni_uhrnu_N[3,1], sd = sqrt(rozdeleni_uhrnu_N[3,2]))
+
+p <- ggplot(data)
+
+p + 
+  geom_line(aes(x = x1, y = y1), color = "darkred") +
+  geom_line(aes(x = x1_N, y = y1_N), color = "darkred", linetype="dotted")
+
+p + 
+  geom_line(aes(x = x2, y = y2), color = "darkblue") +
+  geom_line(aes(x = x2_N, y = y2_N), color = "darkblue", linetype="dotted")
+
+p + 
+  geom_line(aes(x = x3, y = y3), color = "darkgreen") +
+  geom_line(aes(x = x3_N, y = y3_N), color = "darkgreen", linetype="dotted")
+
+```
+
+
+## Zákon velkých čísel
+
+
+
+
+
