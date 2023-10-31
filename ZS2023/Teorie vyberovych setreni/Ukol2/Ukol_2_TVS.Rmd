@@ -1,0 +1,89 @@
+---
+title: "Domácí úkol 2"
+author: "Marie Melínová"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1) Stanovení rozsahu výběrového souboru pro odhad výběrového průměru
+
+```{r}
+library(dplyr)
+
+R <- 5 + abs(2-6)
+data <- as.data.frame(read.table("Mzda.txt"))
+data <- as.data.frame(data[2:nrow(data),])
+colnames(data) <- "Mzda"
+
+dataR <- data %>% slice(rep(1:nrow(data), each = R))
+dataR$Mzda <- as.numeric(data$Mzda)
+```
+
+#### Minimální rozsahy výběru pro zůzné kombinace alphy a delty
+
+```{r}
+alpha <- c(0.1, 0.05, 0.01)
+u <- qnorm(1-alpha/2)
+N <- as.numeric(nrow(dataR))
+mi <- mean(dataR$Mzda)
+sigma <- sqrt(var(dataR$Mzda))
+delta <- c(750, 500, 375)
+
+
+rozsahVyberu <- function(u, delta, N, sigma){
+  n <- 1/(delta^2/(u^2*sigma^2)+1/N)
+  return(n)
+}
+
+rozsahyVyberu <- ceiling(c(rozsahVyberu(u[1], delta[1], N, sigma), rozsahVyberu(u[2], delta[2], N, sigma), rozsahVyberu(u[3], delta[3], N, sigma)))
+
+rozsahyVyberu
+
+zdroje <- 200*R
+```
+
+Z výpočtů nám vychází, že máme zdroje na oslovení `r zdroje` zaměstnanců. Potřebný rozsah výběru nám vychází následovně
+
+* Pro alpha = `r format(round(alpha[1], 2), nsmall = 2)` a delta = `r delta[1]`, nám minimální rozsah výběru vychází na `r rozsahyVyberu[1]`
+* Pro alpha = `r alpha[2]` a delta = `r delta[2]`, nám minimální rozsah výběru vychází na `r rozsahyVyberu[2]`
+* Pro alpha = `r alpha[3]` a delta = `r delta[3]`, nám minimální rozsah výběru vychází na `r rozsahyVyberu[3]`
+
+V prvním a druhém bodě nebudeme mít s rozsahem výběru a přesností problém, jelikož nám to zdroje pokryjí. Ve třetím bodě však již nemáme potřebné zdroje na oslovení potřebného množství zaměstnanců.
+
+#### Simulace k ověření shody asimptotického intervalu spolehlivosti s teoretickou hodnotou 2∆
+
+```{r}
+set.seed(5)
+vyberovePrumery <- c()
+
+for(i in 1:1000){
+  vyberovePrumery[i] <- mean(sample(dataR$Mzda, rozsahyVyberu[1]))
+}
+
+rozptylPrumeru <- ((N-rozsahyVyberu[1])/(N-1))*((N-1)/N)*(sigma^2/rozsahyVyberu[1])
+u[1]*sqrt(rozptylPrumeru) < delta[1]
+```
+
+Teoretická hodnota 2∆ je větší, než asimptotický interval spolehlivosti
+
+```{r}
+library(ggplot2)
+
+vyberovePrumeryGraf <- as.data.frame(vyberovePrumery) 
+colnames(vyberovePrumeryGraf) <- "value"
+
+ggplot(vyberovePrumeryGraf, aes(x = value)) + 
+  geom_histogram(binwidth=300, fill="#69b3a2", color="white", alpha=0.9) +
+  geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + 
+  geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
+  geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + 
+  geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") 
+```
+
+
+
+
+
