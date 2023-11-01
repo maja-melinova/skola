@@ -69,18 +69,47 @@ u[1]*sqrt(rozptylPrumeru) < delta[1]
 
 Teoretická hodnota 2∆ je větší, než asimptotický interval spolehlivosti
 
-```{r}
+```{r, warning=FALSE}
 library(ggplot2)
+library(egg)
 
 vyberovePrumeryGraf <- as.data.frame(vyberovePrumery) 
 colnames(vyberovePrumeryGraf) <- "value"
 
 ggplot(vyberovePrumeryGraf, aes(x = value)) + 
   geom_histogram(binwidth=300, fill="#69b3a2", color="white", alpha=0.9) +
-  geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + 
+  geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + #asmyptotický interval
   geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
-  geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + 
-  geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") 
+  geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
+  geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted")
+
+
+
+ggplot_levy <- ggplot(vyberovePrumeryGraf, aes(x = value)) + 
+  geom_histogram(binwidth=300, fill="#69b3a2", color="white", alpha=0.9) +
+  geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + #asmyptotický interval
+  geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
+  geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
+  geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") +
+  xlim(19510, 19530) +
+  theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) + ylab("") + xlab("")
+
+ggplot_pravy <- ggplot(vyberovePrumeryGraf, aes(x = value)) + 
+  geom_histogram(binwidth=300, fill="#69b3a2", color="white", alpha=0.9) +
+  geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + #asmyptotický interval
+  geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
+  geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
+  geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") +
+  xlim(21020, 21040) +
+  theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) + ylab("") + xlab("")
+
+ggarrange(ggplot_levy, ggplot_pravy, ncol = 2, nrow = 1)
 ```
 
 
