@@ -82,8 +82,8 @@ ggplot(vyberovePrumeryGraf, aes(x = value)) +
   geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
   geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
   geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
-  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
-  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted")
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed")
 
 
 
@@ -93,8 +93,8 @@ ggplot_levy <- ggplot(vyberovePrumeryGraf, aes(x = value)) +
   geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
   geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
   geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
-  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
-  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") +
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed") +
   xlim(19510, 19530) +
   theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) + ylab("") + xlab("")
 
@@ -104,8 +104,8 @@ ggplot_pravy <- ggplot(vyberovePrumeryGraf, aes(x = value)) +
   geom_vline(xintercept = mi - u[1]*sqrt(rozptylPrumeru), col = "darkgrey") +
   geom_vline(xintercept = mi - delta[1], col = "darkred", linetype = "dotted") + #teoretická hodnota 2∆
   geom_vline(xintercept = mi + delta[1], col = "darkred", linetype = "dotted") +
-  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") + #konfidenční interval
-  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dotted") +
+  geom_vline(xintercept = mi + u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed") + #konfidenční interval
+  geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed") +
   xlim(21020, 21040) +
   theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) + ylab("") + xlab("")
 
