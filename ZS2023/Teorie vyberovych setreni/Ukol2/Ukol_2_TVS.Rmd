@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 1) Stanovení rozsahu výběrového souboru pro odhad výběrového průměru
 
-```{r}
+```{r, message=FALSE}
 library(dplyr)
 
 R <- 5 + abs(2-6)
@@ -69,7 +69,7 @@ u[1]*sqrt(rozptylPrumeru) < delta[1]
 
 Teoretická hodnota 2∆ je větší, než asimptotický interval spolehlivosti
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 library(ggplot2)
 library(egg)
 
@@ -123,7 +123,7 @@ delta_volby <- c(0.01, 0.005, 0.0025)
 sigma_volby <- sqrt(N_volby*pi*(1-pi)/(N-1))
 ```
 
-```{r}
+```{r, echo = F}
 whatComb <- function(i, j){
   kombinace <- c()
 
