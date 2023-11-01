@@ -86,7 +86,6 @@ ggplot(vyberovePrumeryGraf, aes(x = value)) +
   geom_vline(xintercept = mi - u[1]*(sigma/sqrt(rozsahyVyberu[1])), col = "darkblue", linetype = "dashed")
 
 
-
 ggplot_levy <- ggplot(vyberovePrumeryGraf, aes(x = value)) + 
   geom_histogram(binwidth=300, fill="#69b3a2", color="white", alpha=0.9) +
   geom_vline(xintercept = mi + u[1]*sqrt(rozptylPrumeru), col = "darkgrey") + #asmyptotický interval
@@ -109,7 +108,7 @@ ggplot_pravy <- ggplot(vyberovePrumeryGraf, aes(x = value)) +
   xlim(21020, 21040) +
   theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) + ylab("") + xlab("")
 
-ggarrange(ggplot_levy, ggplot_pravy, ncol = 2, nrow = 1)
+ggarrange(ggplot_levy, ggplot_pravy, ncol = 2)
 ```
 
 
