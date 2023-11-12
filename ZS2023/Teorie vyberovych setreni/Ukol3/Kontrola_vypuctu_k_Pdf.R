@@ -1,25 +1,25 @@
 ## Kontrola vlastních výpočtů z první části zadání
-kor <- rbind(c(9, 1.5), c(1.5, 4))
-cov2cor(kor)
+kov <- rbind(c(9, 1.5), c(1.5, 4))
+cov2cor(kov)
 
 B <- rbind(c(0, 2), c(-1, 1))
 
-B %*% kor %*% t(B)
+B %*% kov %*% t(B)
 
-cov2cor(B %*% kor %*% t(B))
+cov2cor(B %*% kov %*% t(B))
 
-det(kor)
-sum(diag(kor))
+det(kov)
+sum(diag(kov))
 
 inv <- rbind(c(16/135, -2/45), c(-2/45, 4/15))
 
-kor %*% inv
+kov %*% inv
 
 library(matlib)
 
-inv(kor)
+inv(kov)
 
-vlastni_cisla <- eigen(kor)
+vlastni_cisla <- eigen(kov)
 vlastni_cisla$values
 
 vlastni_cisla$vectors

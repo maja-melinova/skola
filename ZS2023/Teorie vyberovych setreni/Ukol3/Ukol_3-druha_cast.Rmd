@@ -12,23 +12,31 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 v_str_hodnot <- c(EX1 = 1, EX2 = 2)
-kor <- rbind(c(X1 = 9, X2 = 1.5), c(1.5, 4))
-rownames(kor) <- c("X1", "X2")
+kov <- rbind(c(9, 1.5), c(1.5, 4))
+rownames(kov) <- c("X1", "X2")
+colnames(kov) <- c("X1", "X2")
 ```
 
 ```{r}
-data_normalni <- as.data.frame(matrix(ncol = 0, nrow = 50))
-data_normalni$X1 <- rnorm(50, mean = v_str_hodnot[1], sd = sqrt(kor[1,1]))
-data_normalni$X2 <- rnorm(50, mean = v_str_hodnot[2], sd = sqrt(kor[2,2]))
+n = 50
+data_normalni <- as.data.frame(matrix(ncol = 0, nrow = n))
+data_normalni$X1 <- rnorm(n, mean = v_str_hodnot[1], sd = sqrt(kov[1,1]))
+data_normalni$X2 <- rnorm(n, mean = v_str_hodnot[2], sd = sqrt(kov[2,2]))
 
 vektor_prumeru <-  c(mean(data_normalni$X1), mean(data_normalni$X2))
 vyberova_kov <- rbind(c(var(data_normalni$X1), cov(data_normalni$X1, data_normalni$X2)),
                       c(cov(data_normalni$X1, data_normalni$X2), var(data_normalni$X2)))
 rownames(vyberova_kov) <- c("X1", "X2")
+colnames(vyberova_kov) <- c("X1", "X2")
 ```
 
 ```{r}
+rbind(v_str_hodnot, round(vektor_prumeru,2))
+```
 
+
+```{r}
+cbind(kov, c(NA,NA), round(vyberova_kov, 2))
 ```
 
 
