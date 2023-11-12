@@ -18,6 +18,7 @@ colnames(kov) <- c("X1", "X2")
 ```
 
 ```{r}
+set.seed(13)
 n = 50
 data_normalni <- as.data.frame(matrix(ncol = 0, nrow = n))
 data_normalni$X1 <- rnorm(n, mean = v_str_hodnot[1], sd = sqrt(kov[1,1]))
@@ -34,9 +35,13 @@ colnames(vyberova_kov) <- c("X1", "X2")
 rbind(v_str_hodnot, round(vektor_prumeru,2))
 ```
 
+Můžeme vidět, jak nám vektor průměrů i při tak malém počtu pozorování (díky CLV) konverguje k vektoru středních hodnot.
 
 ```{r}
 cbind(kov, c(NA,NA), round(vyberova_kov, 2))
 ```
 
+U kovariance nám vychází v teoretických hodnotách vychází mírná pozitivní závislost (korelace mezi X1 a X2 nám vychází 0.25). Díky této slabé závislosti a malému počtu pozorovaní tak není s podivem, že nám výběrová kovariance vyšla záporná.
+
+<br> <br>
 
