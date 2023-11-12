@@ -1,0 +1,34 @@
+---
+title: "Domácí úkol 3"
+author: "Marie Melínová"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2) Generování náhodných vektorů
+
+```{r}
+v_str_hodnot <- c(EX1 = 1, EX2 = 2)
+kor <- rbind(c(X1 = 9, X2 = 1.5), c(1.5, 4))
+rownames(kor) <- c("X1", "X2")
+```
+
+```{r}
+data_normalni <- as.data.frame(matrix(ncol = 0, nrow = 50))
+data_normalni$X1 <- rnorm(50, mean = v_str_hodnot[1], sd = sqrt(kor[1,1]))
+data_normalni$X2 <- rnorm(50, mean = v_str_hodnot[2], sd = sqrt(kor[2,2]))
+
+vektor_prumeru <-  c(mean(data_normalni$X1), mean(data_normalni$X2))
+vyberova_kov <- rbind(c(var(data_normalni$X1), cov(data_normalni$X1, data_normalni$X2)),
+                      c(cov(data_normalni$X1, data_normalni$X2), var(data_normalni$X2)))
+rownames(vyberova_kov) <- c("X1", "X2")
+```
+
+```{r}
+
+```
+
+
