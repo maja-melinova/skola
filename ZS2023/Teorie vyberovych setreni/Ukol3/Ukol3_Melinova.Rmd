@@ -171,27 +171,32 @@ stredni_hodnota_optimalni <-
 odhad_rozptylu_optimalni <- 
   sum((skupiny_optimalni$Nh/N)^2 * ((skupiny_optimalni$Nh - skupiny_optimalni$nh)/skupiny_optimalni$Nh) * (skupiny_optimalni$rozptyl/skupiny_optimalni$nh))
 
+sample_prosty <- sample(data[,1], 90, F)
 
 
 
-
-intervaly <- as.data.frame(matrix(nrow = 3, ncol = 3))
-rownames(intervaly) <- c("Rovnomerne", "Proporcionalni", "Optimalni")
+intervaly <- as.data.frame(matrix(nrow = 4, ncol = 3))
+rownames(intervaly) <- c("Rovnomerne", "Proporcionalni", "Optimalni", "Prosty")
 colnames(intervaly) <- c("2.5%", "Stredni hodnota", "97.5%")
 
 intervaly$`2.5%` <- c(stredni_hodnota_rovnomerne - qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
                       stredni_hodnota_proporcionalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
-                      stredni_hodnota_optimalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
-intervaly$`Stredni hodnota` <- c(stredni_hodnota_rovnomerne, stredni_hodnota_proporcionalni, stredni_hodnota_optimalni)
+                      stredni_hodnota_optimalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni),
+                      mean(sample_prosty) - qt(0.975, n-1) * sqrt((1-(n/N))*(var(sample_prosty)/n)))
+
+intervaly$`Stredni hodnota` <- c(stredni_hodnota_rovnomerne, stredni_hodnota_proporcionalni, stredni_hodnota_optimalni, mean(sample_prosty))
+
 intervaly$`97.5%` <- c(stredni_hodnota_rovnomerne + qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
                       stredni_hodnota_proporcionalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
-                      stredni_hodnota_optimalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
+                      stredni_hodnota_optimalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni),
+                      mean(sample_prosty) + qt(0.975, n-1) * sqrt((1-(n/N))*(var(sample_prosty)/n)))
 
 kable(intervaly)
 
 c("Rovnomerne" = intervaly$`97.5%`[1]-intervaly$`2.5%`[1],
   "Proporcionalni" = intervaly$`97.5%`[2]-intervaly$`2.5%`[2],
-  "Optimalni" = intervaly$`97.5%`[3]-intervaly$`2.5%`[3])
+  "Optimalni" = intervaly$`97.5%`[3]-intervaly$`2.5%`[3],
+  "Prosty" = intervaly$`97.5%`[4]-intervaly$`2.5%`[4])
 ```
 
 

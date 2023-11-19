@@ -358,11 +358,7 @@ display: none;
 <pre class="r"><code>data &lt;- as.data.frame(read.table(&quot;Mzdy.txt&quot;, header = T, sep = &quot;,&quot;))
 N &lt;- as.numeric(nrow(data))
 L &lt;- as.numeric(length(unique(data$vzdel)))
-stredni_hodnota &lt;- mean(data$Mzda)
-
-addTaskCallback(function(...) {set.seed(123);TRUE})</code></pre>
-<pre><code>## 1 
-## 1</code></pre>
+stredni_hodnota &lt;- mean(data$Mzda)</code></pre>
 <pre class="r"><code>library(knitr)
 
 vzdelani_skupiny &lt;- as.data.frame(matrix(nrow = L, ncol = 0))
@@ -488,33 +484,33 @@ kable(skupiny_rovnomerne)</code></pre>
 <td align="left">h = 1</td>
 <td align="right">125</td>
 <td align="right">22</td>
-<td align="right">1667369</td>
-<td align="right">13338.95</td>
-<td align="right">2189964</td>
+<td align="right">1645506</td>
+<td align="right">13164.05</td>
+<td align="right">2086367</td>
 </tr>
 <tr class="even">
 <td align="left">h = 2</td>
 <td align="right">442</td>
 <td align="right">22</td>
-<td align="right">7245525</td>
-<td align="right">16392.59</td>
-<td align="right">11222637</td>
+<td align="right">7764373</td>
+<td align="right">17566.45</td>
+<td align="right">16241704</td>
 </tr>
 <tr class="odd">
 <td align="left">h = 3</td>
 <td align="right">408</td>
 <td align="right">23</td>
-<td align="right">8876750</td>
-<td align="right">21756.74</td>
-<td align="right">28736809</td>
+<td align="right">8650043</td>
+<td align="right">21201.09</td>
+<td align="right">20860048</td>
 </tr>
 <tr class="even">
 <td align="left">h = 4</td>
 <td align="right">159</td>
 <td align="right">23</td>
-<td align="right">5745714</td>
-<td align="right">36136.57</td>
-<td align="right">31600250</td>
+<td align="right">5438249</td>
+<td align="right">34202.83</td>
+<td align="right">33286240</td>
 </tr>
 </tbody>
 </table>
@@ -561,33 +557,33 @@ kable(skupiny_proporcionalni)</code></pre>
 <td align="left">h = 1</td>
 <td align="right">125</td>
 <td align="right">10</td>
-<td align="right">1670662</td>
-<td align="right">13365.30</td>
-<td align="right">5004018</td>
+<td align="right">1621975</td>
+<td align="right">12975.80</td>
+<td align="right">2300715</td>
 </tr>
 <tr class="even">
 <td align="left">h = 2</td>
 <td align="right">442</td>
 <td align="right">35</td>
-<td align="right">6750426</td>
-<td align="right">15272.46</td>
-<td align="right">11537315</td>
+<td align="right">7366460</td>
+<td align="right">16666.20</td>
+<td align="right">14681610</td>
 </tr>
 <tr class="odd">
 <td align="left">h = 3</td>
 <td align="right">408</td>
 <td align="right">32</td>
-<td align="right">8299842</td>
-<td align="right">20342.75</td>
-<td align="right">20647395</td>
+<td align="right">8870787</td>
+<td align="right">21742.12</td>
+<td align="right">14058879</td>
 </tr>
 <tr class="even">
 <td align="left">h = 4</td>
 <td align="right">159</td>
 <td align="right">13</td>
-<td align="right">5387911</td>
-<td align="right">33886.23</td>
-<td align="right">22160354</td>
+<td align="right">5540600</td>
+<td align="right">34846.54</td>
+<td align="right">13325777</td>
 </tr>
 </tbody>
 </table>
@@ -636,33 +632,33 @@ kable(skupiny_optimalni)</code></pre>
 <td align="left">h = 1</td>
 <td align="right">125</td>
 <td align="right">2</td>
-<td align="right">1684750</td>
-<td align="right">13478.00</td>
-<td align="right">25538</td>
+<td align="right">1600438</td>
+<td align="right">12803.50</td>
+<td align="right">81204.5</td>
 </tr>
 <tr class="even">
 <td align="left">h = 2</td>
 <td align="right">442</td>
 <td align="right">27</td>
-<td align="right">6870792</td>
-<td align="right">15544.78</td>
-<td align="right">13137033</td>
+<td align="right">6879550</td>
+<td align="right">15564.59</td>
+<td align="right">16793986.5</td>
 </tr>
 <tr class="odd">
 <td align="left">h = 3</td>
 <td align="right">408</td>
 <td align="right">40</td>
-<td align="right">8367386</td>
-<td align="right">20508.30</td>
-<td align="right">20502409</td>
+<td align="right">8204309</td>
+<td align="right">20108.60</td>
+<td align="right">17220374.2</td>
 </tr>
 <tr class="even">
 <td align="left">h = 4</td>
 <td align="right">159</td>
 <td align="right">21</td>
-<td align="right">5254836</td>
-<td align="right">33049.29</td>
-<td align="right">16789637</td>
+<td align="right">5491633</td>
+<td align="right">34538.57</td>
+<td align="right">48284262.3</td>
 </tr>
 </tbody>
 </table>
@@ -685,20 +681,25 @@ stredni_hodnota_optimalni &lt;-
 odhad_rozptylu_optimalni &lt;- 
   sum((skupiny_optimalni$Nh/N)^2 * ((skupiny_optimalni$Nh - skupiny_optimalni$nh)/skupiny_optimalni$Nh) * (skupiny_optimalni$rozptyl/skupiny_optimalni$nh))
 
+sample_prosty &lt;- sample(data[,1], 90, F)
 
 
 
-intervaly &lt;- as.data.frame(matrix(nrow = 3, ncol = 3))
-rownames(intervaly) &lt;- c(&quot;Rovnomerne&quot;, &quot;Proporcionalni&quot;, &quot;Optimalni&quot;)
+intervaly &lt;- as.data.frame(matrix(nrow = 4, ncol = 3))
+rownames(intervaly) &lt;- c(&quot;Rovnomerne&quot;, &quot;Proporcionalni&quot;, &quot;Optimalni&quot;, &quot;Prosty&quot;)
 colnames(intervaly) &lt;- c(&quot;2.5%&quot;, &quot;Stredni hodnota&quot;, &quot;97.5%&quot;)
 
 intervaly$`2.5%` &lt;- c(stredni_hodnota_rovnomerne - qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
                       stredni_hodnota_proporcionalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
-                      stredni_hodnota_optimalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
-intervaly$`Stredni hodnota` &lt;- c(stredni_hodnota_rovnomerne, stredni_hodnota_proporcionalni, stredni_hodnota_optimalni)
+                      stredni_hodnota_optimalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni),
+                      mean(sample_prosty) - qt(0.975, n-1) * sqrt((1-(n/N))*(var(sample_prosty)/n)))
+
+intervaly$`Stredni hodnota` &lt;- c(stredni_hodnota_rovnomerne, stredni_hodnota_proporcionalni, stredni_hodnota_optimalni, mean(sample_prosty))
+
 intervaly$`97.5%` &lt;- c(stredni_hodnota_rovnomerne + qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
                       stredni_hodnota_proporcionalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
-                      stredni_hodnota_optimalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
+                      stredni_hodnota_optimalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni),
+                      mean(sample_prosty) + qt(0.975, n-1) * sqrt((1-(n/N))*(var(sample_prosty)/n)))
 
 kable(intervaly)</code></pre>
 <table>
@@ -713,33 +714,36 @@ kable(intervaly)</code></pre>
 <tbody>
 <tr class="odd">
 <td align="left">Rovnomerne</td>
-<td align="right">19760.08</td>
-<td align="right">20754.28</td>
-<td align="right">21748.49</td>
+<td align="right">19742.72</td>
+<td align="right">20721.49</td>
+<td align="right">21700.26</td>
 </tr>
 <tr class="even">
 <td align="left">Proporcionalni</td>
-<td align="right">18702.90</td>
-<td align="right">19496.33</td>
-<td align="right">20289.76</td>
+<td align="right">19912.40</td>
+<td align="right">20634.76</td>
+<td align="right">21357.13</td>
 </tr>
 <tr class="odd">
 <td align="left">Optimalni</td>
-<td align="right">18805.62</td>
-<td align="right">19557.11</td>
-<td align="right">20308.61</td>
+<td align="right">18715.53</td>
+<td align="right">19555.49</td>
+<td align="right">20395.46</td>
+</tr>
+<tr class="even">
+<td align="left">Prosty</td>
+<td align="right">18871.26</td>
+<td align="right">20339.67</td>
+<td align="right">21808.08</td>
 </tr>
 </tbody>
 </table>
 <pre class="r"><code>c(&quot;Rovnomerne&quot; = intervaly$`97.5%`[1]-intervaly$`2.5%`[1],
   &quot;Proporcionalni&quot; = intervaly$`97.5%`[2]-intervaly$`2.5%`[2],
-  &quot;Optimalni&quot; = intervaly$`97.5%`[3]-intervaly$`2.5%`[3])</code></pre>
-<pre><code>##     Rovnomerne Proporcionalni      Optimalni 
-##       1988.403       1586.859       1502.988</code></pre>
-<p>Z výsledků můžeme vidět, že nejmenší interval spolehlivosti odhadu
-střední odhody získáme, pokud budeme volit proporcionální plán. To
-můžeme vysvětlit právě vysokým podílem meziskupinové variability na
-celkové variabilitě.</p>
+  &quot;Optimalni&quot; = intervaly$`97.5%`[3]-intervaly$`2.5%`[3],
+  &quot;Prosty&quot; = intervaly$`97.5%`[4]-intervaly$`2.5%`[4])</code></pre>
+<pre><code>##     Rovnomerne Proporcionalni      Optimalni         Prosty 
+##       1957.534       1444.729       1679.929       2936.818</code></pre>
 <hr>
 </div>
 </div>
