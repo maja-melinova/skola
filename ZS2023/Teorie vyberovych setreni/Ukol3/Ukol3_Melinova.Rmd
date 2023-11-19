@@ -1,0 +1,206 @@
+---
+title: "Ukol3 - Melínová"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Alokace výběru pro oblastní (stratifikovaný) náhodný výběr
+
+```{r}
+data <- as.data.frame(read.table("Mzdy.txt", header = T, sep = ","))
+N <- as.numeric(nrow(data))
+L <- as.numeric(length(unique(data$vzdel)))
+stredni_hodnota <- mean(data$Mzda)
+```
+
+```{r}
+library(knitr)
+
+vzdelani_skupiny <- as.data.frame(matrix(nrow = L, ncol = 0))
+rownames(vzdelani_skupiny) <- c("h = 1", "h = 2", "h = 3", "h = 4")
+vzdelani_skupiny$Nh <- table(data["vzdel"])
+
+for(i in 1:L){
+  vzdelani_skupiny$uhrn[i] <- sum(data[data$vzdel == i, ])
+}
+
+vzdelani_skupiny$stredni_hodnota <- vzdelani_skupiny$uhrn / vzdelani_skupiny$Nh
+
+for(i in 1:L){
+  vzdelani_skupiny$rozptyl[i] <- var(data[data$vzdel == i, 1])
+}
+
+kable(vzdelani_skupiny)
+```
+<hr>
+#### Meziskupinová a vnitroskupinová variabilita
+
+```{r}
+meziskupinova_variabilita <- sum(vzdelani_skupiny$Nh * (vzdelani_skupiny$stredni_hodnota - stredni_hodnota)^2)
+
+vnitroskupinova_variabilita <- sum(
+    sum((data[data$vzdel == 1, ]$Mzda - vzdelani_skupiny$stredni_hodnota[1])^2), 
+    sum((data[data$vzdel == 2, ]$Mzda - vzdelani_skupiny$stredni_hodnota[2])^2),
+    sum((data[data$vzdel == 3, ]$Mzda - vzdelani_skupiny$stredni_hodnota[3])^2),
+    sum((data[data$vzdel == 4, ]$Mzda - vzdelani_skupiny$stredni_hodnota[4])^2))
+
+celkova_variabilita <- meziskupinova_variabilita + vnitroskupinova_variabilita
+
+c("Mezisk. variabilita" = format(meziskupinova_variabilita, scientific = T, digits = 4), 
+  "Vnitrosk. variabilita" = format(vnitroskupinova_variabilita, scientific = T, digits = 4),
+  "Celková variabilita" = format(celkova_variabilita, scientific = T, digits = 4))
+```
+
+Na celkové variabilitě se ze `r round(meziskupinova_variabilita/celkova_variabilita*100, 2)`  % podílí meziskupinová variabilita. Dalo by se říct, že data budou vhodná pro proporcionální alokaci - vnitroskupinová variabilita je menší než meziskupinová.
+
+<hr>
+
+#### Rovnoměrná alokace výběru
+
+```{r}
+n <- 50 + abs(2-6)*10
+# ze dvou skupin vybereme 22 prvků a ze zbylých dvou skupin 23 prvků
+
+
+skupiny_rovnomerne <- as.data.frame(matrix(nrow = L, ncol = 0))
+rownames(skupiny_rovnomerne) <- c("h = 1", "h = 2", "h = 3", "h = 4")
+skupiny_rovnomerne$Nh <- vzdelani_skupiny$Nh
+skupiny_rovnomerne$nh <- c(22, 22, 23, 23)
+skupiny_rovnomerne$uhrn_odhad <- NA
+
+sample_rovnomerne_1 <- sample(data[data$vzdel == 1, 1], 22, F)
+sample_rovnomerne_2 <- sample(data[data$vzdel == 2, 1], 22, F)
+sample_rovnomerne_3 <- sample(data[data$vzdel == 3, 1], 23, F)
+sample_rovnomerne_4 <- sample(data[data$vzdel == 4, 1], 23, F)
+
+skupiny_rovnomerne$stredni_hodnota_odhad <- c(mean(sample_rovnomerne_1),
+                                              mean(sample_rovnomerne_2),
+                                              mean(sample_rovnomerne_3),
+                                              mean(sample_rovnomerne_4))
+skupiny_rovnomerne$uhrn_odhad <- skupiny_rovnomerne$stredni_hodnota_odhad*skupiny_rovnomerne$Nh
+skupiny_rovnomerne$rozptyl <- c(var(sample_rovnomerne_1),
+                                var(sample_rovnomerne_2),
+                                var(sample_rovnomerne_3),
+                                var(sample_rovnomerne_4))
+
+kable(skupiny_rovnomerne)
+```
+
+<hr>
+
+#### Proporcionální alokace výběru
+
+```{r}
+skupiny_proporcionalni <- as.data.frame(matrix(nrow = L, ncol = 0))
+rownames(skupiny_proporcionalni) <- c("h = 1", "h = 2", "h = 3", "h = 4")
+skupiny_proporcionalni$Nh <- vzdelani_skupiny$Nh
+skupiny_proporcionalni$nh <- round(n*vzdelani_skupiny$Nh/N,0)
+skupiny_proporcionalni$uhrn_odhad <- NA
+
+sample_proporcionalni_1 <- sample(data[data$vzdel == 1, 1], skupiny_proporcionalni$nh[1], F)
+sample_proporcionalni_2 <- sample(data[data$vzdel == 2, 1], skupiny_proporcionalni$nh[2], F)
+sample_proporcionalni_3 <- sample(data[data$vzdel == 3, 1], skupiny_proporcionalni$nh[3], F)
+sample_proporcionalni_4 <- sample(data[data$vzdel == 4, 1], skupiny_proporcionalni$nh[4], F)
+
+skupiny_proporcionalni$stredni_hodnota_odhad <- c(mean(sample_proporcionalni_1),
+                                                  mean(sample_proporcionalni_2),
+                                                  mean(sample_proporcionalni_3),
+                                                  mean(sample_proporcionalni_4))
+skupiny_proporcionalni$uhrn_odhad <- skupiny_proporcionalni$stredni_hodnota_odhad*skupiny_proporcionalni$Nh
+skupiny_proporcionalni$rozptyl <- c(var(sample_proporcionalni_1),
+                                    var(sample_proporcionalni_2),
+                                    var(sample_proporcionalni_3),
+                                    var(sample_proporcionalni_4))
+
+
+kable(skupiny_proporcionalni)
+```
+
+<hr>
+
+#### Optimální alokace výběru
+
+```{r}
+skupiny_optimalni <- as.data.frame(matrix(nrow = L, ncol = 0))
+rownames(skupiny_optimalni) <- c("h = 1", "h = 2", "h = 3", "h = 4")
+skupiny_optimalni$Nh <- vzdelani_skupiny$Nh
+skupiny_optimalni$nh <- round(n*((vzdelani_skupiny$Nh*vzdelani_skupiny$rozptyl)/sum(vzdelani_skupiny$Nh*vzdelani_skupiny$rozptyl)),0)
+skupiny_optimalni$uhrn_odhad <- NA
+
+sample_optimalni_1 <- sample(data[data$vzdel == 1, 1], skupiny_optimalni$nh[1], F)
+sample_optimalni_2 <- sample(data[data$vzdel == 2, 1], skupiny_optimalni$nh[2], F)
+sample_optimalni_3 <- sample(data[data$vzdel == 3, 1], skupiny_optimalni$nh[3], F)
+sample_optimalni_4 <- sample(data[data$vzdel == 4, 1], skupiny_optimalni$nh[4], F)
+
+skupiny_optimalni$stredni_hodnota_odhad <- c(
+  mean(sample_optimalni_1),
+  mean(sample_optimalni_2),
+  mean(sample_optimalni_3),
+  mean(sample_optimalni_4))
+skupiny_optimalni$uhrn_odhad <- skupiny_optimalni$stredni_hodnota_odhad*skupiny_optimalni$Nh
+skupiny_optimalni$rozptyl <- c(var(sample_optimalni_1),
+                               var(sample_optimalni_2),
+                               var(sample_optimalni_3),
+                               var(sample_optimalni_4))
+
+
+
+kable(skupiny_optimalni)
+```
+
+<hr>
+
+#### Intervaly spolehlivosti pro jednotlivé výběrové plány
+
+```{r}
+stredni_hodnota_rovnomerne <-
+  sum(skupiny_rovnomerne$stredni_hodnota_odhad*skupiny_rovnomerne$Nh)/N
+odhad_rozptylu_rovnomerne <- 
+  sum((skupiny_rovnomerne$Nh/N)^2 * ((skupiny_rovnomerne$Nh - skupiny_rovnomerne$nh)/skupiny_rovnomerne$Nh) * (skupiny_rovnomerne$rozptyl/skupiny_rovnomerne$nh))
+
+stredni_hodnota_proporcionalni <-
+  sum(skupiny_proporcionalni$stredni_hodnota_odhad*skupiny_proporcionalni$Nh)/N
+odhad_rozptylu_proporcionalni <- 
+  sum((skupiny_proporcionalni$Nh/N)^2 * ((skupiny_proporcionalni$Nh - skupiny_proporcionalni$nh)/skupiny_proporcionalni$Nh) * (skupiny_proporcionalni$rozptyl/skupiny_proporcionalni$nh))
+
+stredni_hodnota_optimalni <-
+  sum(skupiny_optimalni$stredni_hodnota_odhad*skupiny_optimalni$Nh)/N
+odhad_rozptylu_optimalni <- 
+  sum((skupiny_optimalni$Nh/N)^2 * ((skupiny_optimalni$Nh - skupiny_optimalni$nh)/skupiny_optimalni$Nh) * (skupiny_optimalni$rozptyl/skupiny_optimalni$nh))
+
+
+
+
+
+intervaly <- as.data.frame(matrix(nrow = 3, ncol = 3))
+rownames(intervaly) <- c("Rovnomerne", "Proporcionalni", "Optimalni")
+colnames(intervaly) <- c("2.5%", "Stredni hodnota", "97.5%")
+
+intervaly$`2.5%` <- c(stredni_hodnota_rovnomerne - qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
+                      stredni_hodnota_proporcionalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
+                      stredni_hodnota_optimalni - qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
+intervaly$`Stredni hodnota` <- c(stredni_hodnota_rovnomerne, stredni_hodnota_proporcionalni, stredni_hodnota_optimalni)
+intervaly$`97.5%` <- c(stredni_hodnota_rovnomerne + qt(0.975, n-1)*sqrt(odhad_rozptylu_rovnomerne),
+                      stredni_hodnota_proporcionalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_proporcionalni),
+                      stredni_hodnota_optimalni + qt(0.975, n-1)*sqrt(odhad_rozptylu_optimalni))
+
+kable(intervaly)
+
+c("Rovnomerne" = intervaly$`97.5%`[1]-intervaly$`2.5%`[1],
+  "Proporcionalni" = intervaly$`97.5%`[2]-intervaly$`2.5%`[2],
+  "Optimalni" = intervaly$`97.5%`[3]-intervaly$`2.5%`[3])
+```
+
+
+<hr>
+
+
+
+
+
+
+
+
