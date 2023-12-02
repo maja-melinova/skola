@@ -1,0 +1,112 @@
+---
+title: "Ukol4"
+author: "Marie Melínová"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = F}
+library("data.table")
+library(knitr)
+```
+
+
+## Poměrový a regresní odhad
+
+```{r}
+MU284 <- read.csv("MU284.csv")
+N <-  as.numeric(length(MU284$P85))
+n <- 28
+
+#Zajímá nás P85 (y), pomocná proměnná P75 (x)
+
+y <- MU284$P85
+x <- MU284$P75
+```
+
+```{r}
+intervalyFce <- function(type, pocet){
+  dh <- c()
+  stredniHodnota <- c()
+  hh <- c()
+  vysledek <- c()
+  
+  if(type == "pom"){
+    #Poměrový odhad
+    for(i in 1:pocet){
+      vyber <- sample(1:N, n, F)
+      MU284_n <- setorder(MU284[vyber,],X)
+      y_n <- MU284_n$P85
+      x_n <- MU284_n$P75
+      
+      r <- mean(y_n)/mean(x_n)
+      sr2 <- (1/(n-1)) * sum((y_n - r*x_n)^2)
+      odhadRozptylu <- ((N-1)/N) * sr2/n
+      mi_r <- r*mean(x)
+      DH <- mi_r - qt(0.975, n-1)*sqrt(odhadRozptylu)
+      HH <- mi_r + qt(0.975, n-1)*sqrt(odhadRozptylu)
+
+      dh[i] <- DH
+      stredniHodnota[i] <- mi_r
+      hh[i] <- HH
+    }
+  } else if(type == "reg"){
+    #Regresní odhad
+    for(i in 1:pocet){
+      vyber <- sample(1:N, n, F)
+      MU284_n <- setorder(MU284[vyber,],X)
+      y_n <- MU284_n$P85
+      x_n <- MU284_n$P75
+      
+      model <- lm(y ~ x)
+      model_n <- lm(y_n ~ x_n)
+      a <- as.numeric(model_n$coefficients[1])
+      B <- as.numeric(model$coefficients[2])
+      mi_l = a + B*mean(x)
+      odhadRozptylu_reg <- ((N-n)/(N*n*(n-1)))*sum((y_n - a - B*x_n)^2)
+      DH_r <- mi_l - qt(0.975, n-1)*sqrt(odhadRozptylu_reg)
+      HH_r <- mi_l + qt(0.975, n-1)*sqrt(odhadRozptylu_reg)
+      
+      dh[i] <- DH_r
+      stredniHodnota[i] <- mi_l
+      hh[i] <- HH_r
+    }
+  } else if(type == "prosty"){
+    #Prostý náhodný odhad
+    for(i in 1:n){
+      vyber <- sample(1:N, n, F)
+      MU284_n <- setorder(MU284[vyber,],X)
+      y_n <- MU284_n$P85
+      x_n <- MU284_n$P75
+      
+      mi_prosty <- mean(y_n)
+      odhadRozptylu_prosty <- ((N-n)/N) * (var(y_n)/n)
+      DH_prosty <- mi_prosty - qt(0.975, n-1)*sqrt(odhadRozptylu_prosty)
+      HH_prosty <- mi_prosty + qt(0.975, n-1)*sqrt(odhadRozptylu_prosty)
+      
+      dh[i] <- DH_prosty
+      stredniHodnota[i] <- mi_prosty
+      hh[i] <- HH_prosty
+    }
+  }
+  vysledek <- round(c("2.5%" = mean(dh), "Střední hodnota" = mean(stredniHodnota), "97.5%" = mean(hh), "Délka intervalu" = mean(hh) - mean(dh)), 2)
+  
+  return(vysledek)
+}
+```
+
+<hr>
+
+#### Porovnání jednotlivých odhadů
+
+```{r}
+porovnani <- as.data.frame(rbind(intervalyFce(type = "pom", 1000),
+                                 intervalyFce(type = "reg", 1000),
+                                 intervalyFce(type = "prosty", 1000)))
+rownames(porovnani) <- c("Poměrový odhad", "Regresní odhad", "Prostý náhodný odhad")
+kable(porovnani)
+```
+<br><br><br>
