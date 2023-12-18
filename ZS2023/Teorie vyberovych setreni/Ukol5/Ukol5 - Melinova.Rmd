@@ -1,0 +1,58 @@
+---
+title: "Úkol 5"
+author: "Marie Melínová"
+output: html_document
+---
+
+## Skupinový a dvoustupňový náhodný výběr
+
+```{r}
+data <- as.data.frame(read.csv("testyDU5.csv"))
+```
+
+<hr>
+
+#### a) Vybereme 1/10 studentů -> Prostý náhodný výběr
+
+```{r}
+n_a <- nrow(data)/10
+
+set.seed(200102)
+vyber_a <- data[sample(1:nrow(data), n_a),]
+
+prumerny_pocet_b_a <- round(mean(vyber_a$body),2)
+```
+
+Ve výběrovém plánu a) vybereme prostým náhodným výběrem `r n_a` studentů. Průměrný počet bodů na studenta je **`r prumerny_pocet_b_a`**. Tento odhad je **nezkreslený**.
+
+<hr>
+
+#### b) V cvičeních každého typu vybereme 1/10 studentů -> Stratifikovaný výběr
+
+```{r}
+L_b <- as.numeric(length(table(data$id_cv)))
+N_h <- 20
+n_h <- N_h/10
+
+vyber_b <- as.data.frame(matrix(nrow = 0, ncol = ncol(data)))
+colnames(vyber_b) <- colnames(data)
+
+for(i in 1:L_b){
+  pomocna_data <- data[data$id_cv == i,]
+  set.seed(200102)
+  vyber_b <- rbind(vyber_b, pomocna_data[sample(1:nrow(pomocna_data), n_h),])
+}
+
+prumerny_pocet_b_b <- round(mean(vyber_b$body), 2)
+```
+
+Ve výběrovém plánu b) rozdělíme data na `r L_b` nepřekrývajících se oblastí - podle cvičení. V každém z těchto cvičení vybereme `r n_h` studenty (celkově tedy máme opět `r nrow(vyber_b)` studentů). Průměrný počet bodů na studenta je **`r prumerny_pocet_b_b`**. Tento odhad je **nezkreslený**.
+
+<hr>
+
+#### c) Kompletně opravíme 1/10 cvičení -> Skupinový výběr
+
+```{r}
+
+```
+
