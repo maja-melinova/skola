@@ -11,6 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 data <- as.data.frame(read.table("Mzdy.txt", header = T, sep = ","))
+mzda_vzdel_ANOVA <- lm(data$Mzda ~ data$vzdel)
+mzda_vzdel_ANOVA_summary <- summary(mzda_vzdel_ANOVA)
+mzda_vzdel_ANOVA_summary$r.squared
+
+oneway <- aov(data$Mzda ~ data$vzdel)
+s_oneway <- summary(oneway)
+s_oneway
+
 N <- as.numeric(nrow(data))
 L <- as.numeric(length(unique(data$vzdel)))
 stredni_hodnota <- mean(data$Mzda)

@@ -21,38 +21,240 @@ set.seed(200102)
 vyber_a <- data[sample(1:nrow(data), n_a),]
 
 prumerny_pocet_b_a <- round(mean(vyber_a$body),2)
+teoreticka_sm_odch_a <- sqrt(var(vyber_a$body)/n_a)
 ```
 
-Ve výběrovém plánu a) vybereme prostým náhodným výběrem `r n_a` studentů. Průměrný počet bodů na studenta je **`r prumerny_pocet_b_a`**. Tento odhad je **nezkreslený**.
+Ve výběrovém plánu a) vybereme prostým náhodným výběrem `r n_a` studentů. Průměrný počet bodů na studenta je **`r prumerny_pocet_b_a`**. Tento odhad je **nestranný**.
 
 <hr>
 
 #### b) V cvičeních každého typu vybereme 1/10 studentů -> Stratifikovaný výběr
 
 ```{r}
-L_b <- as.numeric(length(table(data$id_cv)))
+L <- as.numeric(length(table(data$id_cv)))
 N_h <- 20
 n_h <- N_h/10
 
 vyber_b <- as.data.frame(matrix(nrow = 0, ncol = ncol(data)))
 colnames(vyber_b) <- colnames(data)
+sh2_b <- c()
 
-for(i in 1:L_b){
+for(i in 1:L){
   pomocna_data <- data[data$id_cv == i,]
   set.seed(200102)
   vyber_b <- rbind(vyber_b, pomocna_data[sample(1:nrow(pomocna_data), n_h),])
 }
 
 prumerny_pocet_b_b <- round(mean(vyber_b$body), 2)
+
+for(i in 1:L){
+  sh2_b[i] <- var(vyber_b$body[((i*2)-1):(i*2)])
+}
+
+teoreticka_sm_odch_b <- sqrt(sum((N_h/160)^2 * ((N_h - n_h)/N_h) * sh2_b/n_h))
 ```
 
-Ve výběrovém plánu b) rozdělíme data na `r L_b` nepřekrývajících se oblastí - podle cvičení. V každém z těchto cvičení vybereme `r n_h` studenty (celkově tedy máme opět `r nrow(vyber_b)` studentů). Průměrný počet bodů na studenta je **`r prumerny_pocet_b_b`**. Tento odhad je **nezkreslený**.
+Ve výběrovém plánu b) rozdělíme data na `r L` nepřekrývajících se oblastí - podle cvičení. V každém z těchto cvičení vybereme `r n_h` studenty (celkově tedy máme opět `r nrow(vyber_b)` studentů). Průměrný počet bodů na studenta je **`r prumerny_pocet_b_b`**. Tento odhad je **nestranný**.
 
 <hr>
 
 #### c) Kompletně opravíme 1/10 cvičení -> Skupinový výběr
 
+```{r, warning=FALSE}
+M <- as.numeric(length(table(data$id_cv)))
+n_c <- M/10
+
+#set.seed(200102)
+#vyber_c <- data[data$id_cv == sort(sample(1:M, n_c)),] 
+#Chtěla jsem to vyřešit vektorově, ale nevím, proč rko nevybere všechny řádky, které vyhovují podmínce
+
+set.seed(200102)
+vybrana_cviceni <- sort(sample(1:M, n_c))
+
+vyber_c <- as.data.frame(matrix(nrow = 0, ncol = 0))
+
+for(i in 1:nrow(data)){
+  for(j in 1:n_c){
+    if(data$id_cv[i] == vybrana_cviceni[j]){
+      vyber_c <- rbind(vyber_c, data[i,])
+    }
+  }
+}
+
+prumerny_pocet_b_c <- round(mean(vyber_c$body), 2)
+
+su2 <- c()
+
+for(i in 1:n_c){
+  pom_dat <- vyber_c[vyber_c$id_cv == vybrana_cviceni[i], ]
+  su2[i] <- pom_dat$body - mean(pom_dat$body)
+}
+
+teoreticka_sm_odch_c <- sqrt(1/(M^2) * (160*(160-n_c)/(n_c - 1)) * sum(su2)^2)
+```
+
+Ve výběrovém plánu c) vybereme náhodně `r n_c` cvičení a ta prošetříme celá. Průměrný počet bodů na studenta nám zde vychází na **`r prumerny_pocet_b_c `**. Odhad je **nestranný**, jelikož skupiny jsou stejně velké.
+
+<hr>
+
+#### d) Vybereme 1/5 cvičení a zde opravíme 1/2 testů -> Dvoustupňový výběr
+
 ```{r}
+N_d <- as.numeric(length(table(data$id_cv)))
+n_d <- N_d/5
+M_d <- 20
+m_d <- M_d/2
+
+set.seed(200102)
+vybrana_cviceni_d <- sort(sample(1:N_d, n_d))
+
+vyber_d <- as.data.frame(matrix(nrow = 0, ncol = 0))
+
+for(i in 1:n_d){
+  pomocna_data <- data[vybrana_cviceni_d[i] == data$id_cv,]
+  
+  set.seed(200102)
+  vyber_d <- rbind(vyber_d, pomocna_data[sort(sample(1:nrow(pomocna_data), m_d)),])
+}
+
+prumerny_pocet_b_d <- round(mean(vyber_d$body), 2)
+```
+
+Ve výběrovém plánu d) vybereme náhodně `r n_d` cvičení a z těchto cvičení zase náhodně vybereme `r m_d` studentů. Průměrný počet bodů na studenta je **`r prumerny_pocet_b_d`**. Tento odhad je **nestranný**, v druhé fázi totiž používáme prostý náhodný výběr.
+
+<hr>
+
+### Porovnání teoretických směrodatných odchylek
+
+```{r}
+c("Prostý náhodný" = teoreticka_sm_odch_a, 
+  "Stratifikovaný" = teoreticka_sm_odch_b,
+  "Skupinový" = teoreticka_sm_odch_c)
+```
+
+Teoretická směrodatná odchylak dvoustupňového výběru se mi bohužel nedaří spočítat. Na základě ostatnách teoretických odchylek nám jako nejlepší výběrový plán vychází **skupinový**.
+
+Pro skupinový a dvousupňový výběr nejradši volíme co nejpodobnější jednotky s co největšími rozdíly uvnitř jednotek. Pokud bychom měli dodatečnou informaci, že na cvičeních jsou stejně dobří studenti, volili bychom radši jiný výběrový plán než skupinový či dvoustupňový.
+
+
+### Grafické srovnání výběrových plánů
+
+##### Prostý náhodný výběr
+
+```{r}
+prosty <- c()
+
+for(i in 1:500){
+  vyber_prosty <- data[sample(1:nrow(data), n_a),]
+  prosty[i] <- round(mean(vyber_prosty$body),2)
+}
+
+hist(prosty, freq = F, xlim = c(12.5, 15))
+abline(v = mean(data$body), col = "red", lwd = 2)
+abline(v = mean(prosty), col = "green", lwd = 1.5, lty = 2)
+```
+
+##### Stratifikovaný výběr
+
+```{r}
+stratifikovany <- c()
+
+for(j in 1:500){
+  vyber_stratifikovany <- as.data.frame(matrix(nrow = 0, ncol = ncol(data)))
+  colnames(vyber_stratifikovany) <- colnames(data)
+
+  for(i in 1:L){
+    pomocna_data <- data[data$id_cv == i,]
+    vyber_stratifikovany <- rbind(vyber_stratifikovany, pomocna_data[sample(1:nrow(pomocna_data), n_h),])
+  }
+
+  stratifikovany[j] <- round(mean(vyber_stratifikovany$body), 2)
+}
+
+hist(stratifikovany, freq = F, xlim = c(12.5, 15))
+abline(v = mean(data$body), col = "red", lwd = 2)
+abline(v = mean(stratifikovany), col = "green", lwd = 1.5, lty = 2)
 
 ```
+
+##### Skupinový výběr
+
+```{r}
+skupinovy <- c()
+
+for(k in 1:500){
+  vybrana_cviceni <- sort(sample(1:M, n_c))
+  vyber_skupinovy <- as.data.frame(matrix(nrow = 0, ncol = 0))
+
+  for(i in 1:nrow(data)){
+    for(j in 1:n_c){
+      if(data$id_cv[i] == vybrana_cviceni[j]){
+        vyber_skupinovy <- rbind(vyber_skupinovy, data[i,])
+      }
+    }
+  }
+
+  skupinovy[k] <- round(mean(vyber_skupinovy$body), 2)
+}
+
+
+hist(skupinovy, freq = F, xlim = c(12.5, 15))
+abline(v = mean(data$body), col = "red", lwd = 2)
+abline(v = mean(skupinovy), col = "green", lwd = 1.5, lty = 2)
+
+```
+
+##### Dvoustupňový
+
+```{r}
+dvoustupnovy <- c()
+
+for(j in 1:500){
+  vybrana_cviceni_d <- sort(sample(1:N_d, n_d))
+
+  vyber_dvoustupnovy <- as.data.frame(matrix(nrow = 0, ncol = 0))
+
+  for(i in 1:n_d){
+    pomocna_data <- data[vybrana_cviceni_d[i] == data$id_cv,]
+    vyber_dvoustupnovy <- rbind(vyber_dvoustupnovy, pomocna_data[sort(sample(1:nrow(pomocna_data), m_d)),])
+  }
+
+  dvoustupnovy[j] <- round(mean(vyber_dvoustupnovy$body), 2)
+}
+
+
+hist(dvoustupnovy, freq = F, xlim = c(12.5, 15))
+abline(v = mean(data$body), col = "red", lwd = 2)
+abline(v = mean(dvoustupnovy), col = "green", lwd = 1.5, lty = 2)
+
+```
+
+## Rozklad rozptylu podle cvičení
+
+```{r}
+skupiny <- as.data.frame(matrix(nrow = 20, ncol = 80))
+for(i in 1:80){
+  skupiny[,i] <- data[data$id_cv == i,]$body
+}
+
+stredniHodnoty_skupin <- apply(skupiny, 2, mean)
+meziskupinova <- sum(20 * (stredniHodnoty_skupin - mean(data$body))^2)
+
+vnitroskupinova <- 0
+for(i in 1:80){
+  vnitroskupinova <- vnitroskupinova + (sum((skupiny[,i] - mean(skupiny[,i]))^2))
+}
+
+celkova <- meziskupinova + vnitroskupinova
+meziskupinova/celkova
+```
+
+Na celkové variabilitě se z `r round(meziskupinova/celkova*100, 2)`  % podílí meziskupinová variabilita. Data jsou tedy ideální na **skupinový** a **dvousupňový** výběr.
+
+<br><br>
+
+
+
+
+
 

@@ -1,0 +1,129 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<hr>
+## Úkol 2.1
+
+Ze stránek České národní banky (odrážka Statistika – systém časových řad ARAD) si
+stáhněte nejdelší možnou časovou řadu objemu úvěrů poskytnutých nefinančním
+podnikům (stav úvěrů, nikoli nově poskytnuté úvěry). Tuto řadu si zobrazte v grafu a i
+s využitím různých transformací časové řady se pokuste odhalit co nejvíce prvků
+neobvyklého chování, které tato řada vykazuje („neobvyklé“ = chování řady nepodložené
+čistě hospodářským vývojem) – aneb poznejte svá data před samotným využitím v modelu.
+
+a. Pro nalezené „neobvyklé“ prvky se pokuste vytvořit logické hypotézy, které by tento
+vývoj v časové řadě mohly vysvětlovat.
+b. Své hypotézy ověřte/podpořte pomocí zdrojů nalezených na internetu (novinové
+články, učebnice, webové stránky ČNB či dalších finančních institucí).
+c. Vyhodnoťte, nakolik identifikované prvky ovlivňují ekonomickou vypovídací
+schopnost časové řady.
+
+<hr>
+
+```{r}
+library(ggplot2)
+
+dataPom <- read.csv("ARAD-uvery.csv", sep = ";")
+dataPom[,5] <- gsub(',', '.', dataPom[,5])
+
+dataARAD <- as.data.frame(matrix(ncol = 0, nrow = nrow(dataPom)))
+
+dataARAD$obdobi <- as.Date(dataPom[,1], "%Y-%m-%d")
+dataARAD$uvery <- as.numeric(dataPom[,5])
+dataARAD$uveryTis <- dataARAD$uvery/1000
+
+dataARAD <- dataARAD[order(dataARAD[,1]),]
+
+ggplot(dataARAD, aes(x = obdobi, y = uveryTis)) +
+  geom_line() +
+  xlab("Období") + ylab("Objem úvěrů v tis. ks") + ggtitle("Úvěry poskytnuté nefinančním podnikům")
+```
+
+```{r}
+library(mFilter)
+dataARAD$uveryTis_bezT_hp1 <- hpfilter(dataARAD$uveryTis,freq=2,type="frequency", drift=TRUE)$trend
+
+ggplot(dataARAD, aes(x = obdobi, y = uveryTis_bezT_hp1)) +
+  geom_line() +
+  xlab("Období") + ylab("")  + ggtitle("Úvěry poskytnuté nefinančním podnikům očištěné o trend pomocí HP filtru")
+```
+
+#### Nízký objem poskytnutých úvěrů v roce 2005
+
+V roce 2005 se uskutečnil historicky největší růst ekonomiky. Ten se uskutečnil v nízkoinflačním prostředí, když inflace byla nižší při posilování devizového kurzu CZK. k čemuž nejvíce přispěly výsledky zahraničního obchodu zbožím. Vývoj zahraničně ekonomických vztahů byl klíčovým jevem vysokého a zrychlujícího se růstu HDP a rozhodujícím činitelem zlepšení souhrnné ekonomické pozice, které se projevilo ve snížení rozsahu vnitřní a vnější nerovnováhy.
+
+https://www.czso.cz/documents/10180/20549847/1109-05-q4-int.pdf/c53e6c0e-1e15-4a53-8d06-68567cdf7a33?version=1.0
+
+#### Vysoký objem poskytnutých úvěrů v roce 2008
+
+Za vysvětlením tohoto vysokého objemu poskytnutých úvěrů je Velká recese. Prvotní příčinou byla americká hypoteční krize, která postupně přerostla ve světovou finanční krizi, významnou roli sehrála rovněž vysoká cena ropy v první polovině roku 2008, která vedla k poklesu reálného HDP a zvedla spotřebitelské ceny.
+
+https://cs.wikipedia.org/wiki/Velká_recese
+
+<hr>
+## Úkol 2.2
+
+Z databáze Eurostatu si stáhněte data o českých spotřebitelských cenách v nejdelší možné
+délce časové řady. Pomocí Bertinovy matice a jejího přeuspořádání se pokuste data vizuálně
+zanalyzovat. K přeuspořádání matice použijte ztrátovou funkci STRESS. K nalezení minima ztrátové funkce použijte evoluční algoritmy.
+
+a. Data upravte tak, abyste dále pracovali s mírou inflace, tj. s meziročními změnami
+indexu. Data redukujte na čtvrtletní frekvenci (meziroční změny v březnu, červnu, září a
+prosinci).
+b. Shrňte všechny zajímavé závěry, které jsou z grafu (tj. přeuspořádané Bertinovy
+matice) patrné. Které položky se vyvíjejí obdobně? K jakým změnám ve složení
+inflačních tlaků dochází? Jak se vyvíjí inflace napříč hospodářským cyklem a které
+položky s vývojem hospodářského cyklu nejvíce souvisejí? Které položky jsou velmi
+volatilní (a jsou volatilní tím způsobem, že kolísají s hospodářským cyklem)?
+
+<hr>
+
+```{r}
+data_neocistena <- as.data.frame(read.csv("prc_hicp_midx_page_linear 3.csv"))
+data_neocistena <- data_neocistena[-which(data_neocistena$coicop == "CP09142"),]
+data_neocistena <- data_neocistena[-which(data_neocistena$coicop == "CP02203"),]
+
+dataHICP <- as.data.frame(matrix(nrow = length(table(data_neocistena$TIME_PERIOD)), ncol = 0))
+coicop <- unique(data_neocistena$coicop)
+
+for(i in 1:169){
+  dataHICP[,i] <- data_neocistena[data_neocistena$coicop == coicop[i],]$OBS_VALUE
+}
+
+rownames(dataHICP) <- unique(data_neocistena$TIME_PERIOD)
+colnames(dataHICP) <- coicop
+```
+
+```{r}
+dataHICP2 <- as.data.frame(matrix(ncol = ncol(dataHICP), nrow = (nrow(dataHICP)-12)))
+colnames(dataHICP2) <- colnames(dataHICP)
+
+for(i in 1:96){
+  dataHICP2[i,] <- dataHICP[(i+12),]/dataHICP[i,]
+}
+
+rownames(dataHICP2) <- rownames(dataHICP)[13:108]
+
+dataHICP2 <- dataHICP2[seq(from = 1, to = 96, by = 2),]
+```
+
+
+```{r, fig.width=10, fig.height=25}
+library(seriation)
+order <- c(
+  seriate(dist(as.matrix(dataHICP2), "minkowski", p = 1)),
+  seriate(dist(t(as.matrix(dataHICP2)), "minkowski", p = 1))
+)
+
+bertinplot(as.matrix(dataHICP2), order)
+```
+
+
+
+
+
+
+
+
