@@ -1,0 +1,210 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<hr>
+## Úkol 3.1
+Nasimulujte z normálního normovaného rozdělení 70 (vzájemně nezávislých) hodnot pro
+každou z dvaceti níže uvažovaných proměnných. S využitím těchto dat pomocí regresního
+vztahu:
+
+$$𝑦_𝑖 = 𝛽_1 𝑥_{1,i} + 𝛽_2 𝑥_{2,𝑖} + ... + 𝛽_{20} x_{20,i} + 𝑢_𝑖$$
+nasimulujte hodnoty závislé proměnné $𝑦$, kde parametry $𝛽_1$ až $𝛽_{10} = 1$ a parametry $𝛽_{11}$ až $𝛽_{20} = 0,1$. Náhodná chyba $u_i$ je normálně rozdělená se střední hodnotou 0 a rozptylem 1.
+
+Takto připravená data od tohoto okamžiku považujte za daná.
+Datový soubor rozdělte na 50 a 20 pozorování. Prvních 50 pozorování použijte pro
+trénování a křížovou validaci, zbylých 20 jako testovací množinu pro odhad střední
+čtvercové (predikční) chyby. Pro predikci použijte metodu nejmenších čtverců, hřebenovou
+regresi a LASSO regresi.
+
+a. Pro optimální volbu hyperparametrů použijte 5-násobnou křížovou validaci, pro niž
+si napište vlastní R kód (tj. nevyužívejte dostupné funkce pro křížovou validaci
+v existujících R balíčcích). K získání samotné předpovědi dostupné R balíčky využít
+můžete (viz např. glmnet, lars…). Pro uvažovanou množinu hyperparametrů vždy uveďte
+velikost CV chyby (CV = cross-validation) a její směrodatnou odchylku. Vyberte
+optimální hodnotu hyperparametru.
+b. Vzájemně srovnejte výsledky získané pomocí jednotlivých metod.
+<hr>
+
+```{r, warning=F, message=F}
+library(matlib)
+library(glmnet)
+```
+
+
+```{r}
+data <- as.data.frame(matrix(nrow = 70, ncol = 21))
+colnames(data) <- c("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9", "X10", "X11", "X12", "X13", "X14", "X15", "X16", "X17", "X18", "X19", "X20", "Y")
+
+for(i in 1:20){
+  data[,i] <- rnorm(70)
+}
+
+data$Y <- 10*data$X1 + 10*data$X2 + 10*data$X3 + 10*data$X4 + 10*data$X5 + 10*data$X6 + 10*data$X7 + 10*data$X8 + 10*data$X9 + 10*data$X10 + 0.1*data$X11 + 0.1*data$X12 + 0.1*data$X13 + 0.1*data$X14 + 0.1*data$X15 + 0.1*data$X16 + 0.1*data$X17 + 0.1*data$X18 + 0.1*data$X19 + 0.1*data$X20 + rnorm(1)
+data$Rozdeleni <- rep(1:5, 14)
+```
+
+```{r}
+#Rozdělení dat na trénovací a testovací
+data_train <- data[1:50,]
+data_test <- data[51:70,]
+
+X <- cbind(1, as.matrix(data_train[,1:20]))
+y <- as.matrix(data_train[,21])
+```
+
+```{r}
+#Funkce pro výpočet střední čtvercové chyby
+
+MSE <- function(beta, X, y){
+  n <- nrow(X)
+  y_predikce <- as.matrix(X) %*% beta
+ 
+  MSE <- 1/n * sum((y_predikce - y)^2)
+  return(MSE)
+}
+```
+
+
+<br>
+
+### Metoda nejmenších čtverců
+
+
+```{r}
+beta_OLS <- as.vector(inv(t(X) %*% X) %*% t(X) %*% y)
+nazvy <- c()
+
+for(i in 1:21){
+  nazvy[i] <- paste("b", (i-1), sep = "")
+}
+
+names(beta_OLS) <- nazvy
+beta_OLS
+```
+
+```{r}
+MSE_OLS <- MSE(beta_OLS, cbind(1,data_test[,1:20]), data_test[,21])
+```
+
+
+<br>
+
+### Hřebenová regrese
+
+
+```{r}
+#Volba lambdy
+lambdaCV_hreb <- as.data.frame(matrix(nrow = 5, ncol = 2))
+colnames(lambdaCV_hreb) = c("Best_lambda", "Best_error")
+
+for(i in 1:5){
+  data_test_l <- data_train[data_train$Rozdeleni == i,]
+  data_train_l <- data_train[data_train$Rozdeleni != i,]
+  
+  lambda_values_hreb <- 10^seq(10, -2, length = 200)
+  best_error_hreb <- Inf
+  best_lambda_hreb <- NULL
+  
+  for(lambda_hreb in lambda_values_hreb){
+    model_hreb <- glmnet(as.matrix(data_train_l[,1:20]), y = data_train_l[,21], aplha = 0, lambda = lambda_hreb)
+    
+    beta_hreb_lambda <- as.vector(coef(model_hreb))
+    X_hreb_lambda <- as.matrix(cbind(1, data_test_l[,1:20]))
+    predictions_hreb <- X_hreb_lambda %*% beta_hreb_lambda
+    error_hreb <- mean((predictions_hreb - data_test_l[,21])^2)
+    
+    if(error_hreb < best_error_hreb){
+      best_error_hreb <- error_hreb
+      best_lambda_hreb <- lambda_hreb
+    }
+  }
+  
+  lambdaCV_hreb[i,] <- c(best_lambda_hreb, best_error_hreb)
+}
+
+lambda_hreb <- mean(lambdaCV_hreb$Best_lambda)
+c("Nejlepší lambda" = lambda_hreb, "Nejlepší error" = mean(lambdaCV_hreb$Best_error))
+```
+
+
+```{r}
+#Výpočet parametrů
+beta_hreb <- as.vector(inv(t(X) %*% X + diag(lambda_hreb, ncol(X))) %*% t(X) %*% y)
+
+names(beta_hreb) <- nazvy
+beta_hreb
+```
+
+```{r}
+MSE_hreb <- MSE(beta_hreb, cbind(1,data_test[,1:20]), data_test[,21])
+```
+<br>
+
+### LASSO
+
+```{r}
+#Volba lambdy
+lambdaCV_lasso <- as.data.frame(matrix(nrow = 5, ncol = 2))
+colnames(lambdaCV_lasso) = c("Best_lambda", "Best_error")
+
+for(i in 1:5){
+  data_test_l2 <- data_train[data_train$Rozdeleni == i,]
+  data_train_l2 <- data_train[data_train$Rozdeleni != i,]
+  
+  lambda_values_lasso <- 10^seq(10, -2, length = 200)
+  best_error_lasso <- Inf
+  best_lambda_lasso <- NULL
+  
+  for(lambda_lasso in lambda_values_lasso){
+    model_lasso <- glmnet(as.matrix(data_train_l2[,1:20]), y = data_train_l2[,21], aplha = 1, lambda = lambda_lasso)
+    
+    beta_lasso_lambda <- as.vector(coef(model_lasso))
+    X_lasso_lambda <- as.matrix(cbind(1, data_test_l2[,1:20]))
+    predictions_lasso <- X_lasso_lambda %*% beta_lasso_lambda
+    error_lasso <- mean((predictions_lasso - data_test_l2[,21])^2)
+    
+    if(error_lasso < best_error_lasso){
+      best_error_lasso <- error_lasso
+      best_lambda_lasso <- lambda_lasso
+    }
+  }
+  
+  lambdaCV_lasso[i,] <- c(best_lambda_lasso, best_error_lasso)
+}
+
+lambda_lasso <- mean(lambdaCV_lasso$Best_lambda)
+c("Nejlepší lambda" = lambda_lasso, "Nejlepší error" = mean(lambdaCV_lasso$Best_error))
+```
+
+```{r}
+
+cv <- cv.glmnet(X[,2:21], y, alpha = 1)
+mod <- glmnet(X[,2:21], y, alpha = 1, lambda = cv$lambda.min)
+bety <- as.vector(coef(mod))
+MSE(bety, cbind(1,data_test[,1:20]), data_test[,21])
+
+lasso_model <- glmnet(X[,2:21], y, alpha = 1, lambda = lambda_lasso)
+beta_lasso <- as.vector(coef(lasso_model))
+
+names(beta_lasso) <- nazvy
+beta_lasso
+```
+
+```{r}
+MSE_lasso <- MSE(beta_lasso, cbind(1,data_test[,1:20]), data_test[,21])
+```
+<br>
+
+### Porovnání čtvercových chyb predikce
+
+```{r}
+c("MSE - OLS" = MSE_OLS, "MSE - hřebenová r." = MSE_hreb, "MSE - LASSO" = MSE_lasso)
+```
+
+
+
+
+
+
