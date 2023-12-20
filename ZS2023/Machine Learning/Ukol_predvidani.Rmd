@@ -179,12 +179,6 @@ c("Nejlepší lambda" = lambda_lasso, "Nejlepší error" = mean(lambdaCV_lasso$B
 ```
 
 ```{r}
-
-cv <- cv.glmnet(X[,2:21], y, alpha = 1)
-mod <- glmnet(X[,2:21], y, alpha = 1, lambda = cv$lambda.min)
-bety <- as.vector(coef(mod))
-MSE(bety, cbind(1,data_test[,1:20]), data_test[,21])
-
 lasso_model <- glmnet(X[,2:21], y, alpha = 1, lambda = lambda_lasso)
 beta_lasso <- as.vector(coef(lasso_model))
 

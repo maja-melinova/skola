@@ -401,9 +401,9 @@ y &lt;- as.matrix(data_train[,21])</code></pre>
 
 MSE &lt;- function(beta, X, y){
   n &lt;- nrow(X)
-  y_predikce &lt;- beta * X
+  y_predikce &lt;- as.matrix(X) %*% beta
  
-  MSE &lt;- 1/n * sum((y - y_predikce)^2)
+  MSE &lt;- 1/n * sum((y_predikce - y)^2)
   return(MSE)
 }</code></pre>
 <p><br></p>
@@ -419,66 +419,65 @@ for(i in 1:21){
 names(beta_OLS) &lt;- nazvy
 beta_OLS</code></pre>
 <pre><code>##          b0          b1          b2          b3          b4          b5 
-## -0.65684413  9.99998890  9.99999816 10.00000248  9.99999506 10.00000522 
+##  0.19592514  9.99999344 10.00000586 10.00000377 10.00000132 10.00000146 
 ##          b6          b7          b8          b9         b10         b11 
-## 10.00000185  9.99999640 10.00000003 10.00000387 10.00000191  0.10000695 
+##  9.99999823 10.00000003  9.99999583  9.99999697  9.99999783  0.10000257 
 ##         b12         b13         b14         b15         b16         b17 
-##  0.09999906  0.10000622  0.09998944  0.10000025  0.10000440  0.10000200 
+##  0.10000374  0.10000632  0.10000435  0.09999005  0.10000106  0.09999727 
 ##         b18         b19         b20 
-##  0.09998929  0.09999086  0.09998568</code></pre>
-<pre class="r"><code>MSE_OLS &lt;- MSE(beta_OLS, data_test[,1:20], data_test[,21])
-MSE_OLS</code></pre>
-<pre><code>## [1] 14584.3</code></pre>
+##  0.10000289  0.09999870  0.10000147</code></pre>
+<pre class="r"><code>MSE_OLS &lt;- MSE(beta_OLS, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
 <p><br></p>
 </div>
 <div id="hřebenová-regrese" class="section level3">
 <h3>Hřebenová regrese</h3>
 <pre class="r"><code>#Volba lambdy
-lambdaCV &lt;- as.data.frame(matrix(nrow = 5, ncol = 2))
-colnames(lambdaCV) = c(&quot;Best_lambda&quot;, &quot;Best_error&quot;)
+lambdaCV_hreb &lt;- as.data.frame(matrix(nrow = 5, ncol = 2))
+colnames(lambdaCV_hreb) = c(&quot;Best_lambda&quot;, &quot;Best_error&quot;)
 
 for(i in 1:5){
   data_test_l &lt;- data_train[data_train$Rozdeleni == i,]
   data_train_l &lt;- data_train[data_train$Rozdeleni != i,]
   
-  lambda_values &lt;- 10^seq(10, -2, length = 100)
-  best_error &lt;- Inf
-  best_lambda &lt;- NULL
+  lambda_values_hreb &lt;- 10^seq(10, -2, length = 200)
+  best_error_hreb &lt;- Inf
+  best_lambda_hreb &lt;- NULL
   
-  for(lambda in lambda_values){
-    model_hreb &lt;- glmnet(as.matrix(data_train_l[,1:20]), y = data_train_l[,21], aplha = 0, lambda = lambda)
-    predictions &lt;- predict(model_hreb, s = lambda, newx = as.matrix(data_test_l[,1:20]))
-    error &lt;- mean((data_test_l[,21] - predictions)^2)
+  for(lambda_hreb in lambda_values_hreb){
+    model_hreb &lt;- glmnet(as.matrix(data_train_l[,1:20]), y = data_train_l[,21], aplha = 0, lambda = lambda_hreb)
     
-    if(error &lt; best_error){
-      best_error &lt;- error
-      best_lambda &lt;- lambda
+    beta_hreb_lambda &lt;- as.vector(coef(model_hreb))
+    X_hreb_lambda &lt;- as.matrix(cbind(1, data_test_l[,1:20]))
+    predictions_hreb &lt;- X_hreb_lambda %*% beta_hreb_lambda
+    error_hreb &lt;- mean((predictions_hreb - data_test_l[,21])^2)
+    
+    if(error_hreb &lt; best_error_hreb){
+      best_error_hreb &lt;- error_hreb
+      best_lambda_hreb &lt;- lambda_hreb
     }
   }
   
-  lambdaCV[i,] &lt;- c(best_lambda, best_error)
+  lambdaCV_hreb[i,] &lt;- c(best_lambda_hreb, best_error_hreb)
 }
 
-lambda_hreb &lt;- mean(lambdaCV$Best_lambda)
-c(&quot;Nejlepší lambda&quot; = lambda_hreb, &quot;Nejlepší error&quot; = mean(lambdaCV$Best_error))</code></pre>
+lambda_hreb &lt;- mean(lambdaCV_hreb$Best_lambda)
+c(&quot;Nejlepší lambda&quot; = lambda_hreb, &quot;Nejlepší error&quot; = mean(lambdaCV_hreb$Best_error))</code></pre>
 <pre><code>## Nejlepší lambda  Nejlepší error 
-##      0.01000000      0.07054505</code></pre>
+##      0.01000000      0.02506984</code></pre>
 <pre class="r"><code>#Výpočet parametrů
 beta_hreb &lt;- as.vector(inv(t(X) %*% X + diag(lambda_hreb, ncol(X))) %*% t(X) %*% y)
 
 names(beta_hreb) &lt;- nazvy
 beta_hreb</code></pre>
 <pre><code>##          b0          b1          b2          b3          b4          b5 
-## -0.65775430 10.00387780  9.99991788  9.98956588  9.99386668  9.99327223 
+##  0.19684135  9.99670515  9.99550767  9.99482485  9.99832969 10.00041183 
 ##          b6          b7          b8          b9         b10         b11 
-##  9.99990426  9.99013010  9.99300720  9.99703983  9.99527510  0.09876818 
+##  9.99666022  9.99550473  9.99866861  9.99705223  9.99825362  0.10166417 
 ##         b12         b13         b14         b15         b16         b17 
-##  0.10173002  0.10063262  0.09766232  0.10045698  0.10290319  0.09742114 
+##  0.10199824  0.09978520  0.10089113  0.09928157  0.10094807  0.10244552 
 ##         b18         b19         b20 
-##  0.09611957  0.10209694  0.09790039</code></pre>
-<pre class="r"><code>MSE_hreb &lt;- MSE(beta_hreb, data_test[,1:20], data_test[,21])
-MSE_hreb</code></pre>
-<pre><code>## [1] 14583.6</code></pre>
+##  0.09832199  0.10031135  0.09795893</code></pre>
+<pre class="r"><code>MSE_hreb &lt;- MSE(beta_hreb, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
 <p><br></p>
 </div>
 <div id="lasso" class="section level3">
@@ -491,45 +490,52 @@ for(i in 1:5){
   data_test_l2 &lt;- data_train[data_train$Rozdeleni == i,]
   data_train_l2 &lt;- data_train[data_train$Rozdeleni != i,]
   
-  lambda_values &lt;- 10^seq(10, -2, length = 100)
-  best_error &lt;- Inf
-  best_lambda &lt;- NULL
+  lambda_values_lasso &lt;- 10^seq(10, -2, length = 200)
+  best_error_lasso &lt;- Inf
+  best_lambda_lasso &lt;- NULL
   
-  for(lambda in lambda_values){
-    model_lasso &lt;- glmnet(as.matrix(data_train_l2[,1:20]), y = data_train_l2[,21], aplha = 1, lambda = lambda)
-    predictions &lt;- predict(model_lasso, s = lambda, newx = as.matrix(data_test_l2[,1:20]))
-    error &lt;- mean((data_test_l2[,21] - predictions)^2)
+  for(lambda_lasso in lambda_values_lasso){
+    model_lasso &lt;- glmnet(as.matrix(data_train_l2[,1:20]), y = data_train_l2[,21], aplha = 1, lambda = lambda_lasso)
     
+    beta_lasso_lambda &lt;- as.vector(coef(model_lasso))
+    X_lasso_lambda &lt;- as.matrix(cbind(1, data_test_l2[,1:20]))
+    predictions_lasso &lt;- X_lasso_lambda %*% beta_lasso_lambda
+    error_lasso &lt;- mean((predictions_lasso - data_test_l2[,21])^2)
     
-    if(error &lt; best_error){
-      best_error &lt;- error
-      best_lambda &lt;- lambda
+    if(error_lasso &lt; best_error_lasso){
+      best_error_lasso &lt;- error_lasso
+      best_lambda_lasso &lt;- lambda_lasso
     }
   }
   
-  lambdaCV_lasso[i,] &lt;- c(best_lambda, best_error)
+  lambdaCV_lasso[i,] &lt;- c(best_lambda_lasso, best_error_lasso)
 }
 
 lambda_lasso &lt;- mean(lambdaCV_lasso$Best_lambda)
 c(&quot;Nejlepší lambda&quot; = lambda_lasso, &quot;Nejlepší error&quot; = mean(lambdaCV_lasso$Best_error))</code></pre>
 <pre><code>## Nejlepší lambda  Nejlepší error 
-##      0.01000000      0.07054505</code></pre>
+##      0.01000000      0.02506984</code></pre>
 <pre class="r"><code>lasso_model &lt;- glmnet(X[,2:21], y, alpha = 1, lambda = lambda_lasso)
 beta_lasso &lt;- as.vector(coef(lasso_model))
 
 names(beta_lasso) &lt;- nazvy
 beta_lasso</code></pre>
 <pre><code>##          b0          b1          b2          b3          b4          b5 
-## -0.67010694 10.04402581 10.00746549  9.91019760  9.94058074  9.94031188 
+##  0.20234113 10.01009971  9.96379084  9.97376599  9.98035793  9.99038418 
 ##          b6          b7          b8          b9         b10         b11 
-## 10.02731501  9.91371865  9.96971197  9.98270550  9.96278857  0.06180878 
+##  9.97829611  9.99281596  9.98678091  9.99736633  9.99492638  0.07881865 
 ##         b12         b13         b14         b15         b16         b17 
-##  0.10141233  0.07926410  0.05452902  0.09047643  0.11637283  0.06170185 
+##  0.08824789  0.07497477  0.06331913  0.04574163  0.10489079  0.11549456 
 ##         b18         b19         b20 
-##  0.04736004  0.10197384  0.04466802</code></pre>
-<pre class="r"><code>MSE_lasso &lt;- MSE(beta_lasso, data_test[,1:20], data_test[,21])
-MSE_lasso</code></pre>
-<pre><code>## [1] 14581.65</code></pre>
+##  0.07926258  0.07407651  0.05520606</code></pre>
+<pre class="r"><code>MSE_lasso &lt;- MSE(beta_lasso, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
+<p><br></p>
+</div>
+<div id="porovnání-čtvercových-chyb-predikce" class="section level3">
+<h3>Porovnání čtvercových chyb predikce</h3>
+<pre class="r"><code>c(&quot;MSE - OLS&quot; = MSE_OLS, &quot;MSE - hřebenová r.&quot; = MSE_hreb, &quot;MSE - LASSO&quot; = MSE_lasso)</code></pre>
+<pre><code>##          MSE - OLS MSE - hřebenová r.        MSE - LASSO 
+##       5.318847e-10       1.125675e-04       1.299208e-02</code></pre>
 </div>
 </div>
 
