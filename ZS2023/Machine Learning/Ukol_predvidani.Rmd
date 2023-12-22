@@ -30,6 +30,8 @@ b. Vzájemně srovnejte výsledky získané pomocí jednotlivých metod.
 ```{r, warning=F, message=F}
 library(matlib)
 library(glmnet)
+library(tidyverse)
+library(mFilter)
 ```
 
 
@@ -66,8 +68,33 @@ MSE <- function(beta, X, y){
 }
 ```
 
+```{r}
+#Funkce pro hledání nejlepší lambdy
 
-<br>
+nejlepsiLambda <- function(data_test_l, data_train_l, typ){
+  lambda_values <- seq(10, 0.5, length = 100)
+  best_error <- Inf
+  best_lambda <- NULL
+  
+  for(lambda in lambda_values){
+    model <- glmnet(as.matrix(data_train_l[,1:20]), y = data_train_l[,21], aplha = typ, lambda = lambda)
+    
+    beta_lambda <- as.vector(coef(model))
+    X_lambda <- as.matrix(cbind(1, data_test_l[,1:20]))
+    predictions <- X_lambda %*% beta_lambda
+    error <- mean((predictions - data_test_l[,21])^2)
+    
+    if(error < best_error){
+      best_error <- error
+      best_lambda <- lambda
+    }
+  }
+  
+  lambdaCV <- c("BestLambda" = best_lambda, "BestError" = best_error)
+  return(lambdaCV)
+}
+```
+
 
 ### Metoda nejmenších čtverců
 
@@ -88,9 +115,6 @@ beta_OLS
 MSE_OLS <- MSE(beta_OLS, cbind(1,data_test[,1:20]), data_test[,21])
 ```
 
-
-<br>
-
 ### Hřebenová regrese
 
 
@@ -100,28 +124,10 @@ lambdaCV_hreb <- as.data.frame(matrix(nrow = 5, ncol = 2))
 colnames(lambdaCV_hreb) = c("Best_lambda", "Best_error")
 
 for(i in 1:5){
-  data_test_l <- data_train[data_train$Rozdeleni == i,]
-  data_train_l <- data_train[data_train$Rozdeleni != i,]
+  data_test_l_hreb <- data_train[data_train$Rozdeleni == i,]
+  data_train_l_hreb <- data_train[data_train$Rozdeleni != i,]
   
-  lambda_values_hreb <- 10^seq(10, -2, length = 200)
-  best_error_hreb <- Inf
-  best_lambda_hreb <- NULL
-  
-  for(lambda_hreb in lambda_values_hreb){
-    model_hreb <- glmnet(as.matrix(data_train_l[,1:20]), y = data_train_l[,21], aplha = 0, lambda = lambda_hreb)
-    
-    beta_hreb_lambda <- as.vector(coef(model_hreb))
-    X_hreb_lambda <- as.matrix(cbind(1, data_test_l[,1:20]))
-    predictions_hreb <- X_hreb_lambda %*% beta_hreb_lambda
-    error_hreb <- mean((predictions_hreb - data_test_l[,21])^2)
-    
-    if(error_hreb < best_error_hreb){
-      best_error_hreb <- error_hreb
-      best_lambda_hreb <- lambda_hreb
-    }
-  }
-  
-  lambdaCV_hreb[i,] <- c(best_lambda_hreb, best_error_hreb)
+  lambdaCV_hreb[i,] <- nejlepsiLambda(data_test_l_hreb, data_train_l_hreb, 0)
 }
 
 lambda_hreb <- mean(lambdaCV_hreb$Best_lambda)
@@ -140,7 +146,6 @@ beta_hreb
 ```{r}
 MSE_hreb <- MSE(beta_hreb, cbind(1,data_test[,1:20]), data_test[,21])
 ```
-<br>
 
 ### LASSO
 
@@ -150,28 +155,10 @@ lambdaCV_lasso <- as.data.frame(matrix(nrow = 5, ncol = 2))
 colnames(lambdaCV_lasso) = c("Best_lambda", "Best_error")
 
 for(i in 1:5){
-  data_test_l2 <- data_train[data_train$Rozdeleni == i,]
-  data_train_l2 <- data_train[data_train$Rozdeleni != i,]
+  data_test_l_lasso <- data_train[data_train$Rozdeleni == i,]
+  data_train_l_lasso <- data_train[data_train$Rozdeleni != i,]
   
-  lambda_values_lasso <- 10^seq(10, -2, length = 200)
-  best_error_lasso <- Inf
-  best_lambda_lasso <- NULL
-  
-  for(lambda_lasso in lambda_values_lasso){
-    model_lasso <- glmnet(as.matrix(data_train_l2[,1:20]), y = data_train_l2[,21], aplha = 1, lambda = lambda_lasso)
-    
-    beta_lasso_lambda <- as.vector(coef(model_lasso))
-    X_lasso_lambda <- as.matrix(cbind(1, data_test_l2[,1:20]))
-    predictions_lasso <- X_lasso_lambda %*% beta_lasso_lambda
-    error_lasso <- mean((predictions_lasso - data_test_l2[,21])^2)
-    
-    if(error_lasso < best_error_lasso){
-      best_error_lasso <- error_lasso
-      best_lambda_lasso <- lambda_lasso
-    }
-  }
-  
-  lambdaCV_lasso[i,] <- c(best_lambda_lasso, best_error_lasso)
+  lambdaCV_lasso[i,] <- nejlepsiLambda(data_test_l_lasso, data_train_l_lasso, 1)
 }
 
 lambda_lasso <- mean(lambdaCV_lasso$Best_lambda)
@@ -189,13 +176,229 @@ beta_lasso
 ```{r}
 MSE_lasso <- MSE(beta_lasso, cbind(1,data_test[,1:20]), data_test[,21])
 ```
-<br>
 
-### Porovnání čtvercových chyb predikce
+#### Porovnání čtvercových chyb predikce
 
 ```{r}
 c("MSE - OLS" = MSE_OLS, "MSE - hřebenová r." = MSE_hreb, "MSE - LASSO" = MSE_lasso)
 ```
+
+<hr>
+
+## Úkol 3.2
+
+Sestrojte model pro předpověď sezonně očištěného hrubého disponibilního důchodu domácností v ČR na jedno až čtyři čtvrtletí dopředu. V rámci tohoto modelu vhodným způsobem využijte ML algoritmů. 
+
+Pro trénování algoritmů použijte období 1Q 1999 – 4Q 2017. Předpovědi proveďte pro 1Q–4Q 2018, 1Q–4Q 2019 a 1Q–4Q 2020 (pro předpověď na 1Q–4Q 2019 použijte data až do 4Q 2018, ale data po 4Q 2017 již nevyužívejte pro trénování algoritmů, analogicky postupujte i u předpovědí na období 1Q–
+4Q 2020).
+
+<hr>
+
+```{r}
+data_HDD <- read.csv("HDD.csv")[1:88,]
+hp_SO <- hpfilter(data_HDD$HDD,freq=10,type="frequency", drift=TRUE)
+data_HDD$HDD_SO <- data_HDD$HDD - as.vector(hp_SO$cycle)
+```
+
+```{r}
+data_HDD_train_2018 <- data_HDD[1:76,]
+data_HDD_test_2018 <- data_HDD[77:80,]
+
+hp_2018 <- hpfilter(data_HDD_train_2018$HDD,freq=10,type="frequency", drift=TRUE)
+data_HDD_train_2018$trend <- hp_2018$trend
+data_HDD_train_2018$t <- c(1:76)
+data_HDD_train_2018$t2 <- data_HDD_train_2018$t^2
+data_HDD_train_2018$t3 <- data_HDD_train_2018$t^3
+
+model_trend <- lm(trend ~ t + t2 + t3, data_HDD_train_2018)
+plot(data_HDD_train_2018$trend, type = "l")
+lines(model_trend$fitted.values, col = "red")
+
+model_hdd <- lm(HDD_SO ~ t + trend, data_HDD_train_2018)
+plot(data_HDD_train_2018$HDD_SO, type = "l")
+lines(model_hdd$fitted.values, col = "red")
+
+t <- as.data.frame(rbind(c(77, 77^2, 77^3), c(78, 78^2, 78^3), c(79, 79^2, 79^3), c(80, 80^2, 80^3)))
+colnames(t) <- c("t", "t2", "t3")
+predpoved_trend <- predict(model_trend, newdata = cbind(1, t))
+
+hdd_predpoved_data <- as.data.frame(cbind(1, "trend" = predpoved_trend, "t" = c(77:80)))
+predpoved_hdd <- predict(model_hdd, newdata = hdd_predpoved_data)
+rbind(predpoved_hdd, data_HDD_test_2018$HDD_SO)
+
+c("RMSE" = sqrt(mean((predpoved_hdd - data_HDD_test_2018$HDD_SO)^2)))
+```
+
+```{r}
+data_HDD_train_2019 <- data_HDD[1:80,]
+data_HDD_test_2019 <- data_HDD[81:84,]
+
+hp_2019 <- hpfilter(data_HDD_train_2019$HDD,freq=10,type="frequency", drift=TRUE)
+data_HDD_train_2019$trend <- hp_2019$trend
+data_HDD_train_2019$t <- c(1:80)
+data_HDD_train_2019$t2 <- data_HDD_train_2019$t^2
+data_HDD_train_2019$t3 <- data_HDD_train_2019$t^3
+
+model_trend_2019 <- lm(trend ~ t + t2 + t3, data_HDD_train_2019)
+plot(data_HDD_train_2019$trend, type = "l")
+lines(model_trend_2019$fitted.values, col = "red")
+
+model_hdd_2019 <- lm(HDD_SO ~ t + trend, data_HDD_train_2019)
+plot(data_HDD_train_2019$HDD_SO, type = "l")
+lines(model_hdd_2019$fitted.values, col = "red")
+
+t_2019 <- as.data.frame(rbind(c(81, 81^2, 81^3), c(82, 82^2, 82^3), c(83, 83^2, 83^3), c(84, 84^2, 84^3)))
+colnames(t_2019) <- c("t", "t2", "t3")
+predpoved_trend_2019 <- predict(model_trend_2019, newdata = cbind(1, t_2019))
+
+hdd_predpoved_data_2019 <- as.data.frame(cbind(1, "trend" = predpoved_trend_2019, "t" = c(81:84)))
+predpoved_hdd_2019 <- predict(model_hdd_2019, newdata = hdd_predpoved_data_2019)
+
+rbind(predpoved_hdd_2019, data_HDD_test_2019$HDD_SO)
+c("RMSE" = sqrt(mean((predpoved_hdd_2019 - data_HDD_test_2019$HDD_SO)^2)))
+```
+
+```{r}
+data_HDD_train_2020 <- data_HDD[1:84,]
+data_HDD_test_2020 <- data_HDD[85:88,]
+
+hp_2020 <- hpfilter(data_HDD_train_2020$HDD,freq=10,type="frequency", drift=TRUE)
+data_HDD_train_2020$trend <- hp_2020$trend
+data_HDD_train_2020$t <- c(1:84)
+data_HDD_train_2020$t2 <- data_HDD_train_2020$t^2
+data_HDD_train_2020$t3 <- data_HDD_train_2020$t^3
+
+model_trend_2020 <- lm(trend ~ t + t2 + t3, data_HDD_train_2020)
+plot(data_HDD_train_2020$trend, type = "l")
+lines(model_trend_2020$fitted.values, col = "red")
+
+model_hdd_2020 <- lm(HDD_SO ~ t + trend, data_HDD_train_2020)
+plot(data_HDD_train_2020$HDD_SO, type = "l")
+lines(model_hdd_2020$fitted.values, col = "red")
+
+t_2020 <- as.data.frame(rbind(c(85, 85^2, 85^3), c(86, 86^2, 86^3), c(87, 87^2, 87^3), c(88, 88^2, 88^3)))
+colnames(t_2020) <- c("t", "t2", "t3")
+predpoved_trend_2020 <- predict(model_trend_2020, newdata = cbind(1, t_2020))
+
+hdd_predpoved_data_2020 <- as.data.frame(cbind(1, "trend" = predpoved_trend_2020, "t" = c(85:88)))
+predpoved_hdd_2020 <- predict(model_hdd_2020, newdata = hdd_predpoved_data_2020)
+rbind(predpoved_hdd_2020, data_HDD_test_2020$HDD_SO)
+
+c("RMSE" = sqrt(mean((predpoved_hdd_2020 - data_HDD_test_2020$HDD_SO)^2)))
+```
+
+
+
+<hr>
+
+## Úkol 3.3
+
+Sestrojte model pro předpověď počtu živě narozených dětí v ČR. Model by měl být schopen předpovídat počet živě narozených dětí na 5 let dopředu – důvodem pro předpověď je potřeba plánování kapacity školek a možnost včasné reakce na jejich případný nedostatek/nadbytek. Hlavní důraz v tomto úkolu je kladen na detailní popis základní logiky a struktury modelu plus hlavní konceptuální kroky při získávání předpovědi.
+
+<hr>
+
+```{r}
+data_ <- read.csv("Data_ML_narozeni.csv", sep = ";")
+colnames(data_) <- data_[1,]
+
+data_narozeni <- tibble(
+  Vek_matky = as.numeric(data_$Prum_vek_matky[2:31]),
+  Rozvodovost = as.numeric(data_$Rozvodovost[2:31]),
+  HDP = as.numeric(data_$HDP[2:31]),
+  Nezamestnanost = as.numeric(data_$Nezamestnanost[2:31]),
+  Plodnost = as.numeric(data_$Uhrnna_plodnost[2:31]),
+  Pocet_narozenych = as.numeric(data_$Zive_narozeni[2:31])
+)
+data_narozeni$ZmenaHDP <- 1
+
+for(i in 2:30){
+  data_narozeni[i,7] <- data_narozeni$HDP[i]/data_narozeni$HDP[(i-1)]
+}
+
+#Vytvoření modelu
+model_narozeni <- lm(Pocet_narozenych ~ Vek_matky + Rozvodovost + ZmenaHDP + Nezamestnanost + Plodnost, data = data_narozeni)
+coef(model_narozeni)
+```
+
+
+```{r}
+data_narozeni$t <- c(1:30)
+data_narozeni$t2 <- (data_narozeni$t)^2
+
+
+#Modelování předpovědi věku matky
+model_vekMatky <- lm(Vek_matky ~ t + t2, data_narozeni)
+plot(data_narozeni$Vek_matky, type = "l")
+lines(model_vekMatky$fitted.values)
+
+predpoved_vekMatky <- c()
+for(i in 31:35){
+  predpoved_vekMatky[(i-30)] <- sum(model_vekMatky$coefficients * c(1, i, i^2))
+}
+
+#Modelování předpovědi Rozvodovosti
+model_Rozvodovost <- lm(Rozvodovost ~ t + t2, data_narozeni)
+plot(data_narozeni$Rozvodovost, type = "l")
+lines(model_Rozvodovost$fitted.values)
+
+predpoved_Rozvodovost <- c()
+for(i in 31:35){
+  predpoved_Rozvodovost[(i-30)] <- sum(model_Rozvodovost$coefficients * c(1, i, i^2))
+}
+
+#Modelování předpovědi HDP -> předpokládáme, že steady-state je růst o průměr
+predpoved_zmenaHDP <- rep(mean(data_narozeni$ZmenaHDP), 5)
+predpoved_zmenaHDP2 <- rep(2, 5) #steady-state podle předpovědi
+
+#Modelování předpovědi nezaměstnanosti
+model_nezamestnanost <- lm(Nezamestnanost ~ t, data_narozeni)
+plot(data_narozeni$Nezamestnanost, type = "l")
+lines(model_nezamestnanost$fitted.values)
+
+predpoved_Nezamestnanost <- c()
+for(i in 31:35){
+  predpoved_Nezamestnanost[(i-30)] <- sum(model_nezamestnanost$coefficients * c(1, i))
+}
+
+#Modelování předpovědi plodnosti
+model_Plodnost <- lm(Plodnost ~ t, data_narozeni)
+plot(data_narozeni$Plodnost, type = "l")
+lines(model_Plodnost$fitted.values)
+
+predpoved_Plodnost <- c()
+for(i in 31:35){
+  predpoved_Plodnost[(i-30)] <- sum(model_Plodnost$coefficients * c(1, i))
+}
+
+predpoved <- as.data.frame(cbind("Vek_matky" = predpoved_vekMatky, "Rozvodovost" = predpoved_Rozvodovost, "ZmenaHDP" = predpoved_zmenaHDP, "Nezamestnanost" = predpoved_Nezamestnanost, "Plodnost" = predpoved_Plodnost))
+predpoved2 <- as.data.frame(cbind("Vek_matky" = predpoved_vekMatky, "Rozvodovost" = predpoved_Rozvodovost, "ZmenaHDP" = predpoved_zmenaHDP2, "Nezamestnanost" = predpoved_Nezamestnanost, "Plodnost" = predpoved_Plodnost))
+```
+
+```{r}
+predikce_poctuDeti <- as.data.frame(matrix(nrow = 6, ncol = 0))
+predikce_poctuDeti$Roky <- c(2022:2027)
+predikce_poctuDeti$Pocet <- c(data_narozeni$Pocet_narozenych[30],predict(model_narozeni, newdata = predpoved))
+
+predikce_poctuDeti2 <- as.data.frame(matrix(nrow = 6, ncol = 0))
+predikce_poctuDeti2$Roky <- c(2022:2027)
+predikce_poctuDeti2$Pocet <- c(data_narozeni$Pocet_narozenych[30],predict(model_narozeni, newdata = predpoved2))
+
+ggplot() +
+  geom_line(data = data_narozeni, aes(x = c(1993:2022), y = Pocet_narozenych)) +
+  geom_line(data = predikce_poctuDeti, aes(x = Roky, y = Pocet), color = "red") +
+  geom_line(data = predikce_poctuDeti2, aes(x = Roky, y = Pocet), color = "darkgreen") +
+  xlab("Období") + ylab("Počet narozených dětí")
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
