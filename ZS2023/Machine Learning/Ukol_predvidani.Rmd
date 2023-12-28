@@ -226,7 +226,7 @@ hdd_predpoved_data <- as.data.frame(cbind(1, "trend" = predpoved_trend, "t" = c(
 predpoved_hdd <- predict(model_hdd, newdata = hdd_predpoved_data)
 rbind(predpoved_hdd, data_HDD_test_2018$HDD_SO)
 
-c("RMSE" = sqrt(mean((predpoved_hdd - data_HDD_test_2018$HDD_SO)^2)))
+c("R-squared" = cor(predpoved_hdd, data_HDD_test_2018$HDD_SO)^2)
 ```
 
 ```{r}
@@ -255,7 +255,7 @@ hdd_predpoved_data_2019 <- as.data.frame(cbind(1, "trend" = predpoved_trend_2019
 predpoved_hdd_2019 <- predict(model_hdd_2019, newdata = hdd_predpoved_data_2019)
 
 rbind(predpoved_hdd_2019, data_HDD_test_2019$HDD_SO)
-c("RMSE" = sqrt(mean((predpoved_hdd_2019 - data_HDD_test_2019$HDD_SO)^2)))
+c("R-squared" = cor(predpoved_hdd_2019, data_HDD_test_2019$HDD_SO)^2)
 ```
 
 ```{r}
@@ -284,9 +284,8 @@ hdd_predpoved_data_2020 <- as.data.frame(cbind(1, "trend" = predpoved_trend_2020
 predpoved_hdd_2020 <- predict(model_hdd_2020, newdata = hdd_predpoved_data_2020)
 rbind(predpoved_hdd_2020, data_HDD_test_2020$HDD_SO)
 
-c("RMSE" = sqrt(mean((predpoved_hdd_2020 - data_HDD_test_2020$HDD_SO)^2)))
+c("R-squared" = cor(predpoved_hdd_2020, data_HDD_test_2020$HDD_SO)^2)
 ```
-
 
 
 <hr>
@@ -318,6 +317,9 @@ for(i in 2:30){
 #Vytvoření modelu
 model_narozeni <- lm(Pocet_narozenych ~ Vek_matky + Rozvodovost + ZmenaHDP + Nezamestnanost + Plodnost, data = data_narozeni)
 coef(model_narozeni)
+
+plot(data_narozeni$Pocet_narozenych, type = "l")
+lines(model_narozeni$fitted.values, col = "red")
 ```
 
 
@@ -328,23 +330,27 @@ data_narozeni$t2 <- (data_narozeni$t)^2
 
 #Modelování předpovědi věku matky
 model_vekMatky <- lm(Vek_matky ~ t + t2, data_narozeni)
-plot(data_narozeni$Vek_matky, type = "l")
-lines(model_vekMatky$fitted.values)
-
 predpoved_vekMatky <- c()
 for(i in 31:35){
   predpoved_vekMatky[(i-30)] <- sum(model_vekMatky$coefficients * c(1, i, i^2))
 }
 
+plot(data_narozeni$Vek_matky, type = "l")
+lines(model_vekMatky$fitted.values, col = "red")
+
+
 #Modelování předpovědi Rozvodovosti
 model_Rozvodovost <- lm(Rozvodovost ~ t + t2, data_narozeni)
-plot(data_narozeni$Rozvodovost, type = "l")
-lines(model_Rozvodovost$fitted.values)
-
 predpoved_Rozvodovost <- c()
 for(i in 31:35){
   predpoved_Rozvodovost[(i-30)] <- sum(model_Rozvodovost$coefficients * c(1, i, i^2))
 }
+
+plot(data_narozeni$Rozvodovost, type = "l")
+lines(model_Rozvodovost$fitted.values, col = "red")
+
+hp_Rozvodovost <- hpfilter(data_narozeni$Rozvodovost,freq=10,type="frequency", drift=TRUE)
+data_narozeni$HP_Rozvodovost <- hp_Rozvodovost$trend
 
 #Modelování předpovědi HDP -> předpokládáme, že steady-state je růst o průměr
 predpoved_zmenaHDP <- rep(mean(data_narozeni$ZmenaHDP), 5)
@@ -352,18 +358,19 @@ predpoved_zmenaHDP2 <- rep(2, 5) #steady-state podle předpovědi
 
 #Modelování předpovědi nezaměstnanosti
 model_nezamestnanost <- lm(Nezamestnanost ~ t, data_narozeni)
-plot(data_narozeni$Nezamestnanost, type = "l")
-lines(model_nezamestnanost$fitted.values)
-
 predpoved_Nezamestnanost <- c()
 for(i in 31:35){
   predpoved_Nezamestnanost[(i-30)] <- sum(model_nezamestnanost$coefficients * c(1, i))
 }
 
+plot(data_narozeni$Nezamestnanost, type = "l")
+lines(model_nezamestnanost$fitted.values, col = "red")
+
+
 #Modelování předpovědi plodnosti
 model_Plodnost <- lm(Plodnost ~ t, data_narozeni)
 plot(data_narozeni$Plodnost, type = "l")
-lines(model_Plodnost$fitted.values)
+lines(model_Plodnost$fitted.values, col = "red")
 
 predpoved_Plodnost <- c()
 for(i in 31:35){
