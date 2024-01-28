@@ -1,0 +1,156 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<hr>
+## Úkol 4.1
+Nasimulujte z normálního normovaného rozdělení 70 (vzájemně nezávislých) hodnot pro
+každou z dvaceti níže uvažovaných proměnných. S využitím těchto dat pomocí regresního
+vztahu:
+
+$$𝑦_𝑖 = 𝛽_1 𝑥_{1,i} + 𝛽_2 𝑥_{2,𝑖} + ... + 𝛽_{20} x_{20,i} + 𝑢_𝑖$$
+nasimulujte hodnoty závislé proměnné $𝑦$, kde parametry $𝛽_1$ až $𝛽_{10} = 1$ a parametry $𝛽_{11}$ až $𝛽_{20} = 0,1$. Náhodná chyba $u_i$ je normálně rozdělená se střední hodnotou 0 a rozptylem 1. Takto připravená data od tohoto okamžiku považujte za daná.
+
+Datový soubor rozdělte na 50 a 20 pozorování. Prvních 50 pozorování použijete pro trénování, zbylých 20 jako testovací množinu pro odhad střední čtvercové (predikční) chyby.
+
+a. Naučte na daných datech model metodou gradient boosting. Jako slabé modely použijte jednoduchou lineární regresy s jednou vysvětlující proměnnou. Použijte míru rychlosti učení o celikosti 0,1. Využijte kvadratickou ztrátovou funkci.
+b. Naučený model použijte pro získání předpovědí na testovací množině a určete velikost střední čtvercové chyby. Výsledky srovnejte s těmi, které jste získali v minulém úkolu pomocí hřebenové regresse a LASSO regrese
+
+
+<hr>
+
+```{r, warning=F, message=F}
+library(gbm)
+```
+
+
+```{r}
+data <- as.data.frame(matrix(nrow = 70, ncol = 21))
+colnames(data) <- c("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9", "X10", "X11", "X12", "X13", "X14", "X15", "X16", "X17", "X18", "X19", "X20", "Y")
+
+for(i in 1:20){
+  data[,i] <- rnorm(70)
+}
+
+data$Y <- 10*data$X1 + 10*data$X2 + 10*data$X3 + 10*data$X4 + 10*data$X5 + 10*data$X6 + 10*data$X7 + 10*data$X8 + 10*data$X9 + 10*data$X10 + 0.1*data$X11 + 0.1*data$X12 + 0.1*data$X13 + 0.1*data$X14 + 0.1*data$X15 + 0.1*data$X16 + 0.1*data$X17 + 0.1*data$X18 + 0.1*data$X19 + 0.1*data$X20 + rnorm(1)
+#data$Rozdeleni <- rep(1:5, 14)
+```
+
+```{r}
+#Rozdělení dat na trénovací a testovací
+data_train <- data[1:50,]
+data_test <- data[51:70,]
+```
+
+
+### Gradient boosting
+
+```{r, message = F}
+gbm_model <- gbm(Y ~ X1, data = data_train, distribution = "gaussian", shrinkage = 0.1, n.trees = 5000)
+
+new_data <- data.frame(X1 = data_test[,1])
+predikce_gbm <- predict.gbm(gbm_model, newdata = new_data)
+
+#-----
+
+gbm_model2 <- gbm(Y ~ ., data = data_train, distribution = "gaussian", shrinkage = 0.1, n.trees = 5000)
+
+predikce_gbm2 <- predict.gbm(gbm_model2, newdata = data_test[,-21])
+```
+```{r}
+rezidua <- predikce_gbm - data_test$Y
+plot(data_test$Y, type = "l")
+lines(predikce_gbm, col = "red")
+
+rezidua2 <- predikce_gbm2 - data_test$Y
+plot(data_test$Y, type = "l")
+lines(predikce_gbm2, col = "red")
+
+c("MSE" = mean(rezidua^2), "MSE2" = mean(rezidua2^2))
+```
+
+<hr>
+## Úkol 4.2
+
+Pokuste se zreplikovat cvičení na Bagging z přednášek, viz snímky 5-8 v prezentaci. Předpokládejte data:
+
+```{r echo = F, results='asis'}
+library(knitr)
+data_bagging <- as.data.frame(cbind(
+  "xi" = c(0.21, 0.21, 0.09, 0.6, 0.99, 0.75, 0.24, 0.09, 0.23, 0.73),
+  "yi" = c(0.93, 0.9, 0.71, -0.46, -0.21, -1.07, 1.06, 0.45, 1.07, -0.97)
+))
+
+data_bagging$xi2 <- data_bagging$xi^2
+data_bagging$xi3 <- data_bagging$xi^3
+data_bagging$xi4 <- data_bagging$xi^4
+data_bagging$xi5 <- data_bagging$xi^5
+data_bagging$xi6 <- data_bagging$xi^6
+data_bagging$xi7 <- data_bagging$xi^7
+
+kable(t(data_bagging[,c(1,2)]))
+```
+
+
+S využitím dat odhadněte regresní koeficienty polynomické regrese
+
+$$𝑦_𝑖 = 𝛽_0+ 𝛽_1 𝑥_i + 𝛽_2 𝑥_𝑖^2 + ... + 𝛽_{7} x_i^7 + 𝑢_𝑖$$
+
+V grafu zobrazte vyrovnané hodnoty i predikce pro jednotlivá x z intervalu (0,1). Posuďte, jak získané predikce dopadají z pohledu kompromisu mezi zkreslením a variabilitou. Následně se pokuste pomocí metody Bagging variabilitu snížit. V grafu ukažte finální predikce získané pomocí této metody a zhodnoťte, zda jsou blíže funkci, která bylake generování dat skutečně použita.
+
+<hr>
+
+```{r}
+fceZadani <- function(x){
+  return(sin(2*pi*x))
+}
+
+plot(data_bagging[,c(1,2)], xlim = c(0,1))
+curve(fceZadani(x), from = 0, to = 1, col = "red", add = T)
+```
+
+```{r, fig.width=10, fig.height=6}
+model_M1 <- lm(yi ~ xi, data_bagging)
+model_M3 <- lm(yi ~ xi + xi2 + xi3, data_bagging)
+model_M7 <- lm(yi ~ xi + xi2 + xi3 + xi4 + xi5 + xi6 + xi7, data_bagging)
+
+fceM3 <- function(x){
+  hodnota <- sum(model_M3$coefficients * c(1, x, x^2, x^3))
+  return(hodnota)
+}
+
+fceM7 <- function(x){
+  hodnota <- sum(model_M3$coefficients * c(1, x, x^2, x^3, x^4, x^5, x^6, x^7))
+  return(hodnota)
+}
+
+par(mfrow=c(2,2))
+
+plot(data_bagging[,c(1,2)], xlim = c(0, 1), ylim = c(-1.6, 1.2))
+curve(fceZadani(x), from = 0, to = 1, col = "red", add = T)
+abline(h = mean(data_bagging$yi), col = "darkblue")
+text(0.9, 0.9, "M = 0")
+
+plot(data_bagging[,c(1,2)], xlim = c(0, 1), ylim = c(-1.6, 1.2))
+curve(fceZadani(x), from = 0, to = 1, col = "red", add = T)
+curve(model_M1$coefficients[1] + x * model_M1$coefficients[2], from = 0, to = 1, add = T, col = "darkblue")
+text(0.9, 0.9, "M = 1")
+
+plot(data_bagging[,c(1,2)], xlim = c(0, 1), ylim = c(-1.6, 1.2))
+curve(fceZadani(x), from = 0, to = 1, col = "red", add = T)
+curve(Vectorize(fceM3)(x), from = 0, to = 1, col = "darkblue", add = T)
+text(0.9, 0.9, "M = 3")
+
+plot(data_bagging[,c(1,2)], xlim = c(0, 1), ylim = c(-1.6, 1.2))
+curve(fceZadani(x), from = 0, to = 1, col = "red", add = T)
+curve(Vectorize(fceM7)(x), from = 0, to = 1, col = "darkblue", add = T)
+text(0.9, 0.9, "M = 7")
+```
+
+
+
+
+
+
+
