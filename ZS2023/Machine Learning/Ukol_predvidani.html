@@ -444,13 +444,13 @@ for(i in 1:21){
 names(beta_OLS) &lt;- nazvy
 beta_OLS</code></pre>
 <pre><code>##          b0          b1          b2          b3          b4          b5 
-## -2.21406771 10.00000567 10.00001241 10.00000623  9.99999807 10.00000625 
+##  2.48912072 10.00000319  9.99999410 10.00000577 10.00000230  9.99999825 
 ##          b6          b7          b8          b9         b10         b11 
-## 10.00000456  9.99999956  9.99999776 10.00000687 10.00001089  0.09999824 
+##  9.99999893 10.00000308 10.00000228 10.00000112 10.00000801  0.09999300 
 ##         b12         b13         b14         b15         b16         b17 
-##  0.09999671  0.09999718  0.10000086  0.09999665  0.09999832  0.10000573 
+##  0.09999782  0.10000031  0.09998373  0.09999722  0.10000348  0.10000691 
 ##         b18         b19         b20 
-##  0.09999694  0.10000213  0.10000803</code></pre>
+##  0.10000808  0.10000651  0.09998761</code></pre>
 <pre class="r"><code>MSE_OLS &lt;- MSE(beta_OLS, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
 </div>
 <div id="hřebenová-regrese" class="section level3">
@@ -469,20 +469,20 @@ for(i in 1:5){
 lambda_hreb &lt;- mean(lambdaCV_hreb$Best_lambda)
 c(&quot;Nejlepší lambda&quot; = lambda_hreb, &quot;Nejlepší error&quot; = mean(lambdaCV_hreb$Best_error))</code></pre>
 <pre><code>## Nejlepší lambda  Nejlepší error 
-##        0.500000        7.247109</code></pre>
+##         0.50000         4.22766</code></pre>
 <pre class="r"><code>#Výpočet parametrů
 beta_hreb &lt;- as.vector(inv(t(X) %*% X + diag(lambda_hreb, ncol(X))) %*% t(X) %*% y)
 
 names(beta_hreb) &lt;- nazvy
 beta_hreb</code></pre>
-<pre><code>##           b0           b1           b2           b3           b4           b5 
-## -2.011334176  9.865559173  9.951044468  9.860002595  9.830060029  9.700405109 
-##           b6           b7           b8           b9          b10          b11 
-##  9.722021296  9.821408740  9.747229399  9.824623562  9.726865501  0.133174010 
-##          b12          b13          b14          b15          b16          b17 
-## -0.037834166  0.164575736  0.123709325  0.116616101 -0.044519071  0.175807761 
-##          b18          b19          b20 
-##  0.008023582 -0.091546419  0.166856711</code></pre>
+<pre><code>##          b0          b1          b2          b3          b4          b5 
+##  2.47430909  9.79443676  9.95846762  9.83868830  9.69526815  9.87518639 
+##          b6          b7          b8          b9         b10         b11 
+##  9.91447066  9.99770556  9.85446597  9.87940453  9.85648714  0.01352524 
+##         b12         b13         b14         b15         b16         b17 
+##  0.22215251 -0.04808340  0.06400646  0.13904983  0.17366074  0.13934012 
+##         b18         b19         b20 
+##  0.17793486 -0.01663347  0.05141249</code></pre>
 <pre class="r"><code>MSE_hreb &lt;- MSE(beta_hreb, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
 </div>
 <div id="lasso" class="section level3">
@@ -501,24 +501,24 @@ for(i in 1:5){
 lambda_lasso &lt;- mean(lambdaCV_lasso$Best_lambda)
 c(&quot;Nejlepší lambda&quot; = lambda_lasso, &quot;Nejlepší error&quot; = mean(lambdaCV_lasso$Best_error))</code></pre>
 <pre><code>## Nejlepší lambda  Nejlepší error 
-##        0.500000        7.247109</code></pre>
+##         0.50000         4.22766</code></pre>
 <pre class="r"><code>lasso_model &lt;- glmnet(X[,2:21], y, alpha = 1, lambda = lambda_lasso)
 beta_lasso &lt;- as.vector(coef(lasso_model))
 
 names(beta_lasso) &lt;- nazvy
 beta_lasso</code></pre>
-<pre><code>##        b0        b1        b2        b3        b4        b5        b6        b7 
-## -1.557417  9.451292  9.528148  9.781918  9.300703  8.779383  9.286388  9.332863 
-##        b8        b9       b10       b11       b12       b13       b14       b15 
-##  9.052600  9.046982  9.451440  0.000000  0.000000  0.000000  0.000000  0.000000 
-##       b16       b17       b18       b19       b20 
-##  0.000000  0.000000  0.000000  0.000000  0.000000</code></pre>
+<pre><code>##       b0       b1       b2       b3       b4       b5       b6       b7 
+## 2.632338 9.339593 9.980417 9.212845 9.383082 9.737714 9.540670 9.863762 
+##       b8       b9      b10      b11      b12      b13      b14      b15 
+## 9.367895 9.446272 9.356655 0.000000 0.000000 0.000000 0.000000 0.000000 
+##      b16      b17      b18      b19      b20 
+## 0.000000 0.000000 0.000000 0.000000 0.000000</code></pre>
 <pre class="r"><code>MSE_lasso &lt;- MSE(beta_lasso, cbind(1,data_test[,1:20]), data_test[,21])</code></pre>
 <div id="porovnání-čtvercových-chyb-predikce" class="section level4">
 <h4>Porovnání čtvercových chyb predikce</h4>
 <pre class="r"><code>c(&quot;MSE - OLS&quot; = MSE_OLS, &quot;MSE - hřebenová r.&quot; = MSE_hreb, &quot;MSE - LASSO&quot; = MSE_lasso)</code></pre>
 <pre><code>##          MSE - OLS MSE - hřebenová r.        MSE - LASSO 
-##       5.226331e-10       5.298602e-01       6.070100e+00</code></pre>
+##       6.670313e-10       2.973724e-01       2.260533e+00</code></pre>
 <hr>
 </div>
 </div>
@@ -565,9 +565,9 @@ rbind(predpoved_hdd, data_HDD_test_2018$HDD_SO)</code></pre>
 <pre><code>##                     1       2       3       4
 ## predpoved_hdd 1199192 1214322 1229974 1246161
 ##               1236075 1259705 1282816 1302173</code></pre>
-<pre class="r"><code>c(&quot;R-squared&quot; = cor(predpoved_hdd, data_HDD_test_2018$HDD_SO)^2)</code></pre>
-<pre><code>## R-squared 
-## 0.9963979</code></pre>
+<pre class="r"><code>c(&quot;MSE&quot; = mean((predpoved_hdd - data_HDD_test_2018$HDD_SO)^2))</code></pre>
+<pre><code>##        MSE 
+## 2337414924</code></pre>
 <pre class="r"><code>data_HDD_train_2019 &lt;- data_HDD[1:80,]
 data_HDD_test_2019 &lt;- data_HDD[81:84,]
 
