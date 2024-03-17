@@ -1,0 +1,16 @@
+---
+title: "Bayesovská statistika - DÚ1"
+author: "Marie Melínová"
+output: html_document
+---
+
+# Odhad relativní četnosti
+### Marie Melínová - obrazec číslo 84956
+
+Na základě vygenerovaného obrazce usuzuji, že apriorní rozdělení se bude řídit rozdělením beta a bude mít takový tvar:
+
+```{r}
+parsBeta_aprior <- c(25, 18)
+curve(dbeta(x, parsBeta_aprior[1], parsBeta_aprior[2]), from = 0, to = 1, col = "red", ylab = "PDF", xlab = "")
+```
+
