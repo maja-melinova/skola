@@ -1,0 +1,83 @@
+---
+title: "Odhad parametru normálního rozdělení"
+subtitle: "Domácí úkol 2"
+author: "Marie Melínová"
+output: pdf_document
+---
+
+Jako náhodnou veličinu, se kterou budu v domácím úkolu pracovat, jsem si zvolila délku pobytu osoby v koupelně při večerní hygieně. První pozorování je dle zadání 15, druhé 2. Zbylé tři pozorování si vymyslím následovně.
+
+\vspace*{0.2cm}
+```{r}
+data <- c(15, 2, 11, 25, 18)
+```
+
+Dle zadání mám zároveň jako apriorní rozdělení zvolit rozdělení neinformativní. Jedním z nejznámějších neinformativních apriorních rozdělení je Jeffreysovo apriorní rozdělení.
+
+Pro normální rozdělení s neznámou střední hodnotou $\mu$ a známou směrodatnou odchylkou $\sigma$ je toto rozdělení definováno jako:
+
+$$ p(\mu) \propto \frac{1}{\sigma}$$
+
+Toto rozdělení neobsahuje žádné apriorní informace o parametru $\mu$ a je nezávislé na jeho hodnotě.
+
+\vspace*{0.2cm}
+```{r}
+m0 <- mean(data)
+s0 <- 5
+
+aprior <- function(mu, sigma){
+  return(1/sigma)
+}
+```
+
+Nyní již můžeme definovat a spustit Metropolisův-Hastingsův algoritmus.
+
+\vspace*{0.2cm}
+```{r message=F, warning=F}
+# verohodnostni funkce
+fmv <- function(obs, par.mju, par.sig = 5)
+{
+  return(exp(sum(dnorm(obs, par.mju, par.sig, log = TRUE))))
+}
+
+#MH
+draw <- 17
+MHChain <- draw
+
+for (i in 1:100000){
+  proposal <- draw + rnorm(1,0,5)
+  
+  f0 <- log(fmv(data, draw)) + log(aprior(m0,s0))
+  f1 <- log(fmv(data, proposal)) + log(aprior(m0,s0))
+  
+  alpha <- min(1,exp(f1-f0))
+  u <- runif(1)
+  
+  if (u < alpha){
+    draw <- proposal
+  }
+  
+  MHChain <- c(MHChain, draw)
+}
+
+#Vykreslení grafu Markovova řetězce
+plot(MHChain, type = "l", main = "")
+abline(h = mean(MHChain), col = "red")
+```
+\pagebreak
+
+```{r}
+#Posteriorní rozdělení
+hist(MHChain[2000:100000], main = "", breaks = 40, freq = F, xlab = "")
+lines(density(MHChain[2000:100000]), lwd = 2, col = "red")
+curve(dnorm(x, mean(MHChain), sd(MHChain)), lty = 2, lwd = 2, from = 5, to = 25, add = T)
+
+```
+
+
+Střední hodnota náhodné proměnné při použití metody maximální věrohodnoti je `r mean(data)`. Z analýzy posteriorního rozdělení nám střední hodnota vychází na `r mean(MHChain)`. Můžeme tedy vidět, že výsledky se příliš neliší. 
+
+Tento fakt přisuzuji tomu, že jsem místo informativního apriorního rozdělení využila neinformativní a posteriorní rozdělení tak bere informaci hlavně z dat.
+
+
+
