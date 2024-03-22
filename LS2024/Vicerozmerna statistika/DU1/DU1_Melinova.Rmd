@@ -1,0 +1,153 @@
+---
+title: "Domácí úkol 1"
+subtitle: "Průzkumová analýza dat a metoda hlavních komponent"
+author: "Marie Melínová"
+output: pdf_document
+---
+
+Než začnu s plněním samotného domácího úkolu, musím si načíst data. Dle zadání mám pořadové číslo 9 a tím pádem pro další prácí nahrávám soubor s příslušným pořadovým číslem. 
+
+Datový soubor je podobný, jako s kterým jsme pracovali na cvičení č.3, nyní však budeme pracovat s daty o ženách. Data mají 254 pozorování a 7 proměnných, ze kterých slouží proměnná "id" jako identifikátor. 
+
+\vspace*{0.2cm}
+```{r nacteni_dat}
+library(foreign) 
+data = read.spss("du1_9.sav",to.data.frame=TRUE) 
+```
+
+Než budeme dále pokračovat, přejmenujeme si jednotlivé proměnné tak, aby se nám s nimi dále lépe pracovalo. Dále si také míry uložíme do nového datového souboru, který nazveme *miry*.
+
+\vspace*{0.2cm}
+```{r ulozeni_nazvu_promennych}
+prom <- c("ID", "RAMENA", "HRUDNIK", "BOKY", "PREDLOKTI", "KOLENA", "ZAPESTI")
+colnames(data) <- prom
+miry <- data[,c(-1)]
+head(miry)
+```
+
+## Posouzení normality jednotlivých proměnných
+Ze všeho nejdřív se podíváme na základní statistiky, které se našeho souboru týkají. Můžeme si všimnout, že šikmost žádné proměnné nepřesahuje 1 a nejvyšší špičatost má proměnná *KOLENA*.
+
+\vspace*{0.2cm}
+```{r popisne_statistiky}
+library(psych)
+describe(miry)[,-c(1,2,7, 10)]
+```
+\pagebreak
+
+Nyní se na rozdělení jednotlivých proměnným podíváme i graficky. 
+
+\vspace*{0.2cm}
+```{r warning=F, message=F, fig.height=6}
+library(ggplot2)
+library(gridExtra)
+
+plot <- list()
+
+for (i in 1:ncol(miry)) {
+  plot[[i]] <- ggplot(data = miry, aes_string(x = miry[[i]])) +
+    geom_histogram(aes(y = after_stat(density)), colour = "black", fill = "grey") +
+    geom_density(alpha=0.2, fill="darkcyan") + labs(x = prom[i+1],y="")
+}
+
+do.call(grid.arrange,plot)
+```
+
+\pagebreak
+
+Dále se pokusím sestrojit Q-Q ploty, které nám pomohou lépe posoudit porušení (či neporušení) normality jednotlivých proměnných.
+
+\vspace*{0.2cm}
+```{r fig.height = 7}
+par(mfrow=c(3,2))
+
+for (i in 1:ncol(miry)){
+  qqnorm(miry[[i]], pch = 1, frame = FALSE, main = prom[i+1]) 
+  qqline(miry[[i]], col = "steelblue", lwd = 2)
+}
+```
+
+U všech Q-Q plotů si můžeme všimnout levostranného sešikmení, které se projevují odlehlými pozorováními nad naší pomocnou modrou čarou.
+
+\pagebreak
+
+## Posouzení vícerozměrné normality
+
+K posouzení vícerozměrné normality využijeme $\chi^2$ diagram, který využívá Mahalnobisobu vzdálenost. V grafu snadno nalezneme pozorování, která příliš narušují vícerozměrnou normalitu - na pravé straně rozdělení máme velký počet odlehlých pozorování.
+
+\vspace*{0.2cm}
+```{r}
+data$MD <- mahalanobis(miry, colMeans(miry), cov(miry))
+data$rank <- rank(data$MD)
+data$p <- (data$rank - 0.5)/nrow(data)
+data$Q <- qchisq(data$p, 6, ncp = 0, lower.tail = TRUE)
+
+ggplot(data, aes(x = Q,y = MD, label = ifelse(nrow(data) - rank < 7, as.character(ID),''))) +
+  geom_point() +
+  geom_text(hjust = 0, nudge_x = 0.1, size = 3) + 
+  geom_abline(aes(intercept = 0,slope = 1), color = "darkblue")
+```
+
+\pagebreak
+
+## Identifikace odlehlých pozorování
+
+Můžeme vidět, že každá proměnná má určité odlehlé pozorování, díky kterým jsou rozdělení jednotlivých proměnných sešikmené. Nyní se pokusíme o jejich identifikaci.
+
+\vspace*{0.2cm}
+```{r}
+outliers <- list()
+
+for (i in 1:ncol(miry)) {
+  outliers[[i]] <- data.frame(
+    promenna = colnames(miry)[i],
+    pořadí = which(miry[[i]] %in% boxplot.stats(miry[[i]])$out),
+    hodnota = miry[which(miry[[i]] %in% boxplot.stats(miry[[i]])$out),1])
+}
+
+outliers <- do.call(rbind, outliers)
+table(outliers$promenna)
+```
+
+Řekla bych, že vzhledem k ženské stavbě těla je vysvětlení odlehlých pozorování u proměnné *BOKY* a *HRUDNIK* celkem jasná. Ač může být daná žena v ostatních rozměrech považována za "normální", rozměry hrudníku (či boků) se mohou značně odlišovat. 
+
+Co se týče dalších proměnných, řekla bych, že se bude jednat o ženy, které se vymykají všem proměnným najednou z důvodu vyšší tělesné hmotnosti.
+
+\pagebreak
+
+## Určení domenzionality dat, interpretace komponent
+
+Nejdříve nalezneme jednotlivé komponenty v našich date, a kolik variability vysvětlují. K tomu využijeme funkci PCA, která je přímo v základních funkcích R. 
+
+Vzhledem k tomu, že máme všechny proměnné ve stejných jednotkách, můžeme s parametrem *scale* analyzovat jak kovarianční, tak korelační matici. Já jsem za tento parametr zvolila hodnotu *TRUE*, tedy budu analyzovat korelační matici.
+
+Dále si také znázorníme matici komponentních zátěží.
+
+\vspace*{0.2cm}
+```{r}
+PCA <- prcomp(miry, scale = TRUE)
+round(t(PCA$sdev*t(PCA$rotation)), 8)
+```
+
+Na základě matice komponentních zátěží si můžeme všimnout, že první komponenta silně koreluje se všemi proměnnými.
+
+\vspace*{0.2cm}
+```{r}
+summary(PCA)
+```
+
+Z výpisu funkce PCA můžeme vidět, že první komponenta nám vysvětluje 76.41 % celkové variability. Další komponenty už nepřesahují více než 10 % vysvětlené variability. Můžeme tedy říct, že prostorová výraznost žen v našem vzorku se dá vysvětlit jednou silnou dimenzí a nekolika slabšími.
+
+Pro lepší názornost si ještě znázorníme tzv. SCREE plot, ve kterém můžeme spatřit postupné klesání vlastních čísel hlavních komponent. I zde můžeme vidět, že velký zlom nastává po první komponentě.
+
+\vspace*{0.2cm}
+```{r fig.height=3.5}
+screeplot(PCA, type="lines")
+```
+
+
+
+
+
+
+
