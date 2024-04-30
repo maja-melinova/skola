@@ -1,0 +1,87 @@
+---
+title: "Domácí úkol 2"
+subtitle: "Faktorová analýza"
+author: "Marie Melínová"
+output: pdf_document
+---
+
+Druhý úkol pojednává o vydavateli časopisů, který by si rád udělal představu o tom, která témata oslovují podobné čtenáře. Podle zadání má datový soubor 26 proměnných a 800 pozorování. 
+
+Po předběžném prozkoumání mají data skutečně 26 proměnných, avšak v datech je 8003 pozorování. Nejsem si jistá, čemu bych tuto nesrovnalost měla přikládat.
+
+\vspace*{0.2cm}
+```{r}
+library(foreign) 
+data = read.spss("du2_9.sav",to.data.frame=TRUE)
+dim(data)
+```
+
+## Posouzení vhodnosti dat pro faktorovou analýzu
+
+Hlavní problém, které mohou data vykazovat je to, že jednotlivé hodnoty jsou binární. Standartní faktorová analýza počířá s korelační maticí, která předpokládá, že její hodnoty jsou spojité. 
+
+Musíme tedy najít jiný vhodný způsob pro výpočet matice asociací jednotlivých proměnných. To nám umožňuje například funkce `hetcor()`. Funkce `hetcor()` se podívá na každý pár proměnných a vypočítá vhodnou heterogenní korelaci.
+
+\vspace*{0.2cm}
+```{r, message=F}
+library("corrplot")
+library("polycor")
+
+korMatice <- hetcor(data)$correlations
+corrplot(korMatice, order = "hclust", method = "shade", diag = F)
+```
+
+## Odhad vhodné dimenzionality úlohy
+
+Na základě předchozího grafu bych odhadla, že v datech můžou figurovat 3 faktory. S touto informací tedy budeme pracovat a vhodný počet faktorů po případě následně upravíme.
+
+## Model faktorové analýzy
+
+Nyní se již pustíme do samotné faktorové analýzy. Tu provedeme pomocí funkce `factanal()`, pro kterou nemusíme doinstalovávat žádný balíček, jelikož se již nachází v základních funkcích. 
+
+\vspace*{0.2cm}
+```{r}
+fa <- factanal(covmat = korMatice, factors = 3, rotation = "varimax")
+fa
+```
+
+Při použití tří faktorů si můžeme všimnout, že tyto faktory dohromady vysvětlují 60.2 % variability. Mohla bych zvýšit počet faktorů tak, abychom se dostali na vyšší procento vysvětlené variability, avšak při vyšším počtu faktorů už dávají tyto faktory nelogické interpretace. 
+
+Celkový počet faktorů bych musela zvednout až na 8, abychom se dostali alespoň na 70 % vysvětlené variability. Z těchto důvodů jsem se rozhodla ponechat původní tři.
+
+## Interpretace jednotlivých faktorů
+
+```{r}
+faktor1 <- as.data.frame(t(names(which(fa$loadings[,1] >= 0.5))))
+faktor2 <- as.data.frame(t(names(which(fa$loadings[,2] >= 0.5))))
+faktor3 <- as.data.frame(t(names(which(fa$loadings[,3] >= 0.5))))
+```
+
+
+```{r}
+faktor1
+```
+Faktor 1 představuje zájemce o typicky ženskou tématiku (móda, rodina, skandály, vaření, ženy,...). Můžeme si zároveň všimnout, že tento faktor jako jediný s jako jedinou proměnnou `zeny` má negativní korelaci - řekla bych, že to souhlasí s obecným názorem žen na toto téma.
+
+\vspace*{0.2cm}
+```{r}
+faktor2
+```
+O faktoru 2 bych naopak řekla, že spojuje zájemce o typicky mužskou tématiku (auto, počítače, věda,...). 
+
+\vspace*{0.2cm}
+```{r}
+faktor3
+```
+
+Pro poslední faktor jsem měla trochu problém nakonec najít interpretaci. Nakonec bych řekla, že lidi, kteří se velmi zajímají po politiku a dění ve světě i u nás.
+
+### Poznámka
+
+Myslím si, že faktorů opravdu mohlo být více, bohužel jsem nikdy nenašla vhodnou interpretaci jednotlivých faktorů tak, aby odpovídali i případným záporným korelacím atd.
+
+
+
+
+
+

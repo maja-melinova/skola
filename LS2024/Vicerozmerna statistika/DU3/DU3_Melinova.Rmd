@@ -1,0 +1,62 @@
+---
+title: "Domácí úkol 3"
+subtitle: "Shluková analýza"
+author: "Marie Melínová"
+output: pdf_document
+---
+
+Dle zadání má datový soubor obdahovat údaje o 136 modelech automobilů vybraných značek s určitými specifiky. Úkolem je tedy vybrat určitý počet proměnných k identifikaci tržních segmentů pomocí vybrané metody shlukové analýzy.
+
+Ze všeho nejdřív si opět načteme potřebná data, se kterými budeme následně pracovat. Jelikož má každý sloupec v datech jinou jednotku, přeškálujeme si data na hodnotu mezi 0 a 1.
+
+Při analýze jsem si také všimla, že řádek 42 s hodnotou "Honda accord" byl duplicitní. Proto jsem ho z analýzy vynechala.
+
+\vspace*{0.2cm}
+```{r}
+library(foreign) 
+data0 = read.spss("du3.sav",to.data.frame=TRUE)
+data0 <- data0[-42,]
+
+data <- as.data.frame(sapply(data0[,2:17], function(x) {(x-min(x))/(max(x)-min(x))}))
+row.names(data) <- data0$model
+colnames(data) <- c("Cena",  "ObjemValcu", "Vykon", "MaxRychlost", "Zrychleni", 
+                    "SpotrebaMesto", "SpotrebaMimoMesto", "SpotrebaKombinovana", 
+                    "Emise", "Hmotnost", "Delka", "Vyska", "Vaha", "RozvorKol", 
+                    "UzitnaHmotnost", "ObjemZavazProst")
+
+dataT <- t(data)
+dataT[,sample(1:135, 2)]
+```
+
+\pagebreak
+
+Nyní si z dat vytvoříme dendogram a pokusíme se v něm vyznačit rozumné množství shluků. Pro shlukovou analýzu jsem vybrala hierarchické shlukování, euklidovskou vzdálenost a Wardovu metodu.
+
+Hierarchické shlukování jsem zvolila pro jeho schopnost vytvořit dendogram, který umožňuje jednoduše vizualizovat vztahy mezi proměnnými a identifikovat ty proměnné, které si jsou mezi sebou podobné.
+
+\vspace*{0.2cm}
+```{r fig.height = 6, fig.width=8}
+D_matrix <- dist(dataT, method = 'euclidean')
+clust <- hclust(D_matrix, method = "ward.D")
+
+dendogram <- as.dendrogram(clust)
+par(mar=c(10,4,2,2))
+plot(dendogram)
+rect.hclust(clust, k = 3, border = "darkcyan")
+```
+
+Shlukovou analýzou jsme proměnné rozdělili do tří shluků. První shluk, který obsahuje proměnné `Delka` a `RozvorKol` bych zkráceně nazvala jako **velikost**. 
+
+Druhý shluk, obsahující proměnné `Vaha`, `ObjemValcu`, `SpotrebaMesto`, `SpotrebaMimoMesto`, `SpotrebaKombinovana` a `Emise`, bych nazvala jednotně jako **spotřeba**.
+
+Poslednímu shluku, který obsahuje proměnné `Zrychleni`, `Vykon`, `Hmotnost`, `Cena`, `MaxRychlost`, `UzitnaHmotnost`, `Vyska` a `ObjemZavazProstoru`, bych ponechala název **rychlost** nebo **výkon**.
+
+
+
+
+
+
+
+
+
+
