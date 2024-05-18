@@ -1,0 +1,291 @@
+---
+title: "4ST426 Regrese, Domácí úkol"
+author: "Marie Melínová"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+```
+
+Uvažujte datový soubor `SaratogaHouses` z balíku `mosaicData`. Vysvětlovanou proměnnou je `price` a ostatní proměnné budou vysvětlující. Datový soubor rozdělte náhodně na data trénovací (cca 80 % všech pozorování) a data testovací (zbývající pozorování).
+
+Cílem analýzy je vytvořit model, pomocí kterého budete sledovat závislost vysvětlované proměnné na proměnných vysvětlujících a pomocí kterého bude možné predikovat cenu nového domu při znalosti hodnot vysvětlujících proměnných.
+
+\vspace*{1cm}
+```{r nacteni_dat}
+library(mosaicData)
+data <- SaratogaHouses
+
+#Rozdělení dat na trénovací a testovací množinu
+set.seed(42)
+train_index <- sample(1:nrow(data), round(0.8 * nrow(data)), replace = FALSE)
+
+data_train <- data[train_index, ]
+#data_test <- data[-train_index, ]
+```
+
+\pagebreak
+
+# Fáze 1
+
+Nalezněte kvantitativní vysvětlující proměnnou, která vykazuje nejvyšší hodnotu indexu determinace v přislušném modelu s proměnnou `price`.
+
+\vspace*{0.2cm}
+```{r nejvyssi_index_determinace}
+tridy_promenych <- ifelse(sapply(data_train[,2:16], class) == "factor", F, T)
+kv_promenne <- names(which(tridy_promenych))
+
+max_indexDeterminace <- 0
+max_promenna <- ""
+
+# Vytvoření a porovnání modelů
+for (prom in kv_promenne) {
+  
+  formula <- paste("price ~", prom)
+  model <- lm(formula, data = data_train)
+  indexDeterminace <- summary(model)$r.squared
+  
+  if (indexDeterminace > max_indexDeterminace) {
+    max_indexDeterminace <- indexDeterminace
+    max_promenna <- prom
+  }
+}
+
+c(max_promenna, "Index determinace" = max_indexDeterminace)
+```
+
+\vspace*{1cm}
+
+Pokud bychom při výběru uvažovali kvadrát výběrového korelačního koeficientu, dospěli bychom ke stejnému výsledku?
+
+* Pokud bychom použili kvadrát výběrového korelačního koeficientu (tj. Pearsonova korelace), pravděpodobně bychom dospěli k **podobnému výsledku, ale ne nutně ke stejnému**. 
+
+* Pearsonova korelace měří lineární vztah mezi dvěma proměnnými, zatímco index determinace v lineární regresi měří podíl variability závislé proměnné, který je vysvětlen vysvětlujícími proměnnými.
+
+\pagebreak
+
+# Fáze 2
+
+Uvažujte regresní model přímky zachycující závislost vysvětlované proměnné na proměnné `bedrooms` a všimněte si znaménka odhadu regresního parametru. 
+
+\vspace*{0.2cm}
+```{r}
+model_jednoduchaR <- lm(price ~ bedrooms, data = data_train)
+coef(model_jednoduchaR)
+```
+
+\vspace*{0.4cm}
+
+Nyní uvažujte model vícenásobné lineární regrese zachycující závislost proměnné `price` na proměnných `livingArea` a `bedrooms`.
+
+\vspace*{0.2cm}
+```{r}
+model_vicenasobnaR <- lm(price ~ livingArea + bedrooms, data = data_train)
+coef(model_vicenasobnaR)
+```
+
+\vspace*{0.4cm}
+
+Změnil se oproti původnímu regresnímu modelu přímky výrazně odhad regresního parametru u proměnné `bedrooms` nebo se dokonce změnilo znaménko tohoto odhadu? Čím si tyto případné změny vysvětlujete?
+
+* Když vysvětlujeme proměnnou `price` pouze proměnnou `bedrooms`, pozitivní regresní koeficient u proměnné `bedrooms` může naznačovat, že čím více ložnic v domě je, tím vyšší je cena. To dává smysl, protože větší počet ložnic obvykle znamená větší dům a mnoho lidí je ochotno platit vyšší cenu za větší bydlení.
+
+* Pokud jsou ložnice a rozloha bytu vzájemně korelované, může se stát, že při zahrnutí obou proměnných do modelu se koeficient u proměnné `bedrooms` stane záporným.
+
+\vspace*{0.4cm}
+K vysvětlení použijte také vhodně dvou- a třírozměrné grafy.
+\vspace*{0.2cm}
+```{r fig.height=3}
+plot(data_train$price ~ data_train$bedrooms, xlab = "Pocet loznic", ylab = "Cena")
+abline(model_jednoduchaR, col = "red")
+```
+
+\vspace*{0.4cm}
+
+K vykreslení 3D grafu bychom použili funkci `plot3d()` z balíčku `rgl`, bohužel při renderování markdownu nelze tato funkce použít a tím pádem ji nemohu zahrnout do řešení domácího úkolu. 
+
+
+
+\pagebreak
+
+# Fáze 3
+
+Uvažujte model vícenásobné lineární regrese zachycující závislost proměnné `price` na všech kvantitativních vysvětlujících proměnných a odhadněte tento model.
+
+\vspace*{0.2cm}
+```{r}
+model_vseKvant <- lm(price ~ lotSize + age + landValue + livingArea + pctCollege + bedrooms + fireplaces + bathrooms + rooms, data = data_train)
+```
+
+
+1. Pracujte s vyrovnanými hodnotami, na které vykreslete krabičkové grafy odděleně pro kategorie (Yes a No) kategoriální proměnné `waterfront`. Tato proměnná uvádí, zda se nemovitost nalézá u vodní plochy či nikoli.
+
+\vspace*{0.2cm}
+```{r}
+plot(fitted(model_vseKvant) ~ interaction(data_train$waterfront), ylab = "Vyrovnané hodnoty", xlab = "Nemovitost u vodní plochy")
+```
+
+
+2. Následně pro tento model nalezněte průměrnou hodnotu reziduí obou kategorií zvlášť. Vyneste rovněž krabičkové grafy reziduí.
+
+\vspace*{0.2cm}
+```{r}
+plot(resid(model_vseKvant) ~ interaction(data_train$waterfront), ylab = "Reziduální hodnoty", xlab = "Nemovitost u vodní plochy", ylim = c(min(resid(model_vseKvant)),6e5))
+
+text(1, 5.5e5, round(mean(resid(model_vseKvant)[which(data_train$waterfront == "Yes")]), 2))
+text(2, 5.5e5, round(mean(resid(model_vseKvant)[which(data_train$waterfront == "No")]), 2))
+```
+
+
+3. Interpretujte výsledky a vysvětlete z nich např. některé skutečnosti vztahu proměnné `price` a `waterfront`.
+
+* Reziduální hodnoty nemovitostí, které se nachází u vodní plochy, jsou o mnoho vyšší, než reziduální hodnoty nemovitostí, které se u vodní plochy nenachází.
+* Do modelu bychom tedy tuto proměnnou mohli zahrnout, jelikož proměnná `price` se jeví jako závislá i na proměnné `waterfront`.
+
+\pagebreak
+
+# Fáze 4
+
+Uvažujte model vícenásobné lineární regrese zachycující závislost proměnné `price` na všech kvantitativních a také kategoriálních vysvětlujících proměnných. Zatím však neuvažujte interakce a nelinearity. Kategoriální proměnné reprezentujte v modelu s využitím dummy proměnných. Odhadněte tento model a interpretujte odhad regesního parametru u dummy proměnné reprezentující kategoriální proměnnou `centralAir`, tj. přítomnost klimatizace. Je znaménko a hodnota tohoto odhadu v souladu s původní představou?
+
+\vspace*{0.2cm}
+```{r}
+#Kategoriální proměnné jsou kódované jako faktory, takže do regresního modelu automaticky vstupují jako dummy proměnné
+
+model_vse <- lm(price ~., data = data_train)
+round(coef(model_vse),3)
+```
+
+* Za předpokladu, že bychom měli dva identické domy, ale jeden s klimatizací a druhý bez, tak dům, který klimatizaci nemá, bude v průměru o `r format(abs(round(coef(model_vse),2)[19]), scientific = F)` $ levnější, než dům s klimatizací. 
+
+* Znaménko je v souladu s původní představou.
+
+\vspace*{1cm}
+
+Uvažujte pouze ta pozorování, pro něž přítomnost klimatizace nabývá hodnoty `Yes`. S využitím těchto pozorování odhadněte model zachycující závislost proměnné `price` na všech kvantitativních i kategoriálních vysvětlujících proměnných s výjimkou `centralAir`. Následně pracujte pouze s těmi pozorováními, jež odpovídají nemovitostem bez klimatizace. Pro tato pozorování odhadněte model při zahrnutí stejných proměnných jako v předchozím případě. Porovnejte odhady a vysvětlete, jaký vliv má přítomnost klimatizace na cenu domu. Liší se původní představa a výsledek?
+
+\vspace*{0.2cm}
+```{r}
+library(car)
+
+model_sKlima <- lm(price ~., data = data_train[data_train$centralAir == "Yes",1:15])
+model_bezKlima <- lm(price ~., data = data_train[data_train$centralAir == "No",1:15])
+
+compareCoefs(model_sKlima, model_bezKlima, model_vse)
+```
+
+
+Co lze konstatovat o celkové analýze závislosti `price` na všech vysvětlujících proměnných v porovnání s analýzou v podsouborech rozdělených podle přítomnosti klimatizace?
+
+* Na základě rychlé (a pouze vizuální) analýzy rozdílnosti jednotlivých koeficientů si můžeme všimnout několika zajímavých věcí, jako např.:
+  + V domech, kde se nachází klimatizace, se negativně cení přítomnost krbu, zatímco v domech, kde klimatizace není, se přítomnost krbu cení spíše pozitivně,
+  + V domech, kde se nachází klimatizace, se přibližně 1.6-krát více cení vyšší počet pokojů, než v domech, kde klimatizace není,
+  + atd.
+
+\pagebreak
+
+# Fáze 5
+
+Nejprve slovně na základě věcné úvahy i intuice zdůvodněte, jaké vysvětlující proměnné by měly být určující z hlediska ceny nemovitosti. Nevyužívejte zde data ani předchozí analýzy. Diskutujte, zda by vysvěltující proměnné měly vstupovat do modelu lineárně anebo nikoli a zda budou přítomny interakce. Na tomto základě navrhněte matematickou rovnici a zapiště model vícenásobné lineární regrese při zohlednění nelinearit vysvěltujících proměnných a interakcí. V navrženém modelu musí být zařazena alespoň jedna vysvětlující proměnná, která vstupuje nelineárně ve formě polynomu či splinu a alespoň jedna interakce.
+
+1. **Rozloha domu (`livingArea`)**: Většinou platí, že větší domy mají vyšší cenu, protože nabízejí více prostoru pro bydlení a jsou obvykle žádanější (tato proměnná bude do modelu vstupovat ve formě polynomu - od určité rozlohy už další jednotka nemusí být tak ceněná).
+2. **Počet ložnic (`bedrooms`)**: U domů s více ložnicemi a koupelnami je obvykle vyžádána vyšší cena, protože poskytují vyšší komfort a větší flexibilitu pro rodiny nebo jednotlivce.
+3. **Stáří domu (`age`)**: Starší domy mohou mít určitý historický nebo estetický význam, což může zvyšovat jejich hodnotu. Na druhou stranu, nově postavené domy mohou nabízet moderní vybavení a mohou být více energeticky efektivní.
+4. **Hodnota pozemku (`landValue`)**: Hodnota pozemku může odrážet atraktivitu a prestiž dané lokality. Výhodná lokalita může odrážet vyšší cenu nemovitosti kvůli svým vlastnosem, jako je blízkost k veřejné dopravě, školám, parkům nebo obchodům.
+
+Dále do modelu zařadíme dvě interakce:
+
+* **Interakce mezi `livingArea` a `bedrooms`**: Tato interakce by mohla zohledňovat skutečnost, že větší domy mohou mít tendenci mít více ložnic - to může zachytit situaci, kdy se cena domu zvyšuje tím víc, čím větší je plocha a čím víc koupelen se v domě nachází.
+* **Interakce mezi `livingArea` a `age`**: Tato interakce může podchytit situaci, kdy vztah mezi cenou domu a jeho stářím se mění v závislosti na jeho velikosti.
+  + Například, pokud má starší dům velkou plochu, může být jeho cena relativně vyšší než u starších domů menších rozměrů, protože velké starší domy mohou mít např. historickou hodnotu.
+  
+$$ price = \beta_0 + \beta_1 \cdot livingArea + \beta_2 \cdot livingArea^2 + \beta_3 \cdot bedrooms + \beta_4 \cdot age + \beta_5 \cdot landValue + $$
+$$\beta_6 \cdot livingArea \times bedrooms + \beta_7 \cdot livingArea \times age $$
+  
+\vspace*{1cm}
+
+Navržený model odhadněte, interpretujte vlilv proměnných, jež vstupovaly do modelu nelineárně a interpretujte interakce. Předpokládejte splnění všech předpokladů a vhodnými testy hypotéz posuďtě, zda bylo užití nelinearit a interakcí třeba.
+
+\vspace*{0.2cm}
+```{r}
+model <- lm(price ~ poly(livingArea, degree = 2) + bedrooms + age + landValue + livingArea:bedrooms + livingArea:age, data = data_train)
+
+summary(model)
+```
+
+Za předpokladu, že všechny ostatní proměnné zůstávají konstantní,
+
+* koeficient $\beta_1$ nelze přesně interpretovat jako v lineární regresi, jelikož nelze vymezit situaci, kdy se změní pouze jeden koeficient bez změny druhého,
+* koeficient $\beta_2$ představuje příspěvěk kvadratického členu na cenu nemovitosti - je relativně menší než $\beta_1$, což naznačuje, že nárůst ceny nemovitosti v důsledku zvětšení plochy domu se snižuje s rostoucí plochou,
+* koeficient $\beta_6$ udává, jak se změní efekt plochy na cenu nemovitosti s každou jednotkovou změnou počtu ložnic - koeficient je negativní, což naznačuje, že nárůst plochy domu má menší přínos k ceně nemovitosti v domech s větším počtem ložnic, než v domech s nižším počtem ložnic,
+* koeficient $\beta_7$ udává, jak se změní efekt plochy na cenu nemovitosti s každým rokem stárnutí domu - koeficient je opět negativní, což znamená, že hodnota přidaná každou další jednotkou plochy k ceně nemovitosti klesá s rostoucím stářím domu.
+
+\vspace*{0.2cm}
+```{r}
+model_2 <- lm(price ~ livingArea+ bedrooms + age + landValue, data = data_train)
+anova(model, model_2)
+```
+
+Na klasické hladině významnosti nezamítáme nulovou hypotézu ve tvaru $H_0: \beta_2 = \beta_6 = \beta_7 = 0$. Mohli bychom tedy říct, že použití nelinearit a interakcí nebylo potřeba.
+
+
+\pagebreak
+
+# Fáze 6
+
+Vyjděte z modelu, který jste navrhli v předchozí fázi a posuďte, které vysvětlující proměnné jsou přínosné pro zjištění ceny domu a které naopak přínosné nejsou. Cílem není posuzovat statistickou významnost odhadnutých parametrů pomocí testů hypotéz, ale praktickou významnost (např. ekonomický dopad) či významnost ve smyslu rozkladu regresního součtu čtverců, resp. indexu determinace. Shodují se tyto úvahy s výsledky statistické analýzy?
+
+\vspace*{0.2cm}
+```{r}
+a <- anova(model)
+
+prinos_promennych <- as.data.frame(matrix(nrow = 6, ncol = 0))
+prinos_promennych$PROM <- c("livingArea", "bedrooms", "age", "landValue", "livingArea:bedroom", "livingArea:age")
+prinos_promennych$PRINOS <- round(a$`Sum Sq`[1:6] / sum(a$`Sum Sq`[1:6]) *100, 2) 
+#Přínos jednotlivých proměnných v % vysvětlené variability
+
+prinos_promennych
+```
+\vspace*{0.3cm}
+
+Největší podíl na vysvětlené variabilitě má proměnná `livingArea` a `landValue`. U proměnné `livingArea` se není čemu divit, už v první fázi jsme zjistili, že proměnnou `price` vysvětluje nejlépe právě tato proměnná. 
+
+Další proměnné mají podíl na vysvětlené variabilitě jen velmi nízký, proto se není čemu divit, že nám statistický test v minulé fázi potvrdil, že se nelineární vztahy a interakce nemuseli použít.
+
+
+\pagebreak
+
+# Fáze 7
+
+Nalezněte model, pomocí kterého budete co nejpřesněji předpovídat ceny domu pro nová pozorování. Při hledání modelu můžete využít postupy typu regresních polynomů, splinů, interakcí a různých kritérií pro výběr modelu: upravený index determinace, informační kritéria, PRESS statistiku či křížovou validaci. Můžete vyřazovat odlehlá pozorování a využít postupy uvedené v doporučené literatuře, např. hřebenovou regresi či regresi na hlavních komponentech. Výběr modelu provádějte výhradně na trénovacích datech. Následně na testovacích datech odhadněte očekávanou čtvercovou chybu předpovědi ceny nemovitosti pro finální model, jež jste vybrali na základě trénovacích dat.
+
+\vspace*{0.2cm}
+```{r}
+library(splines)
+
+model_final <- lm(price ~ bs(age, degree = 3) + bs(landValue, degree = 2) + livingArea + bathrooms + centralAir + waterfront + newConstruction + age:livingArea + age:bathrooms + age:centralAir + landValue:newConstruction + livingArea:bathrooms + livingArea:centralAir + bathrooms:centralAir, data = data_train)
+
+summary(model_final)$adj.r.squared
+
+a2 <- anova(model_final)
+a2 <- a2$`Sum Sq`[1:14]
+
+prinos_promennych2 <- as.data.frame(matrix(nrow = 14, ncol = 0))
+prinos_promennych2$PROM <- c("bs(age, degree = 3)", "bs(landValue, degree = 2)",
+                             "livingArea", "bathrooms", "centralAir", "waterfront",
+                             "newConstruction", "livingArea:age", "bathrooms:age",
+                             "centralAir:age", "newConstruction:landValue", 
+                             "livingArea:bathrooms", "livingArea:centralAir",
+                             "bathrooms:centralAir")
+prinos_promennych2$PRINOS <- round(a2/sum(a2) *100, 2) 
+#Přínos jednotlivých proměnných v % vysvětlené variability
+
+prinos_promennych2
+```
+
+
+
+
+
+
